@@ -4,8 +4,8 @@
   - SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <info>
-	<id>approval-mainnc</id>
-	<name>approval-mainnc</name>
+	<id>approvalmainnc</id>
+	<name>approvalmainnc</name>
 	<summary>Let users approve or reject files</summary>
 	<description><![CDATA[
 Approve/reject files based on workflows defined by admins.
@@ -16,7 +16,7 @@ and can be installed with [this app](https://apps.nextcloud.com/apps/integration
 	<version>2.2.0</version>
 	<licence>agpl</licence>
 	<author>Julien Veyssier</author>
-	<namespace>Approval</namespace>
+	<namespace>approvalmainnc</namespace>
 	<types>
 		<filesystem/>
 		<dav/>
