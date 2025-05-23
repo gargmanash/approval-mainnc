@@ -5,10 +5,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-namespace OCA\ApprovalMainNC\Service;
+namespace OCA\Approval\Service;
 
 use Exception;
-use OCA\ApprovalMainNC\AppInfo\Application;
+use OCA\Approval\AppInfo\Application;
 use OCP\Constants;
 use OCP\Files\IRootFolder;
 use OCP\Files\Node;

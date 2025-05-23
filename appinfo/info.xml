@@ -4,8 +4,8 @@
   - SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <info>
-	<id>approvalmainnc</id>
-	<name>approvalmainnc</name>
+	<id>approval</id>
+	<name>Approval</name>
 	<summary>Let users approve or reject files</summary>
 	<description><![CDATA[
 Approve/reject files based on workflows defined by admins.
@@ -16,7 +16,7 @@ and can be installed with [this app](https://apps.nextcloud.com/apps/integration
 	<version>2.2.0</version>
 	<licence>agpl</licence>
 	<author>Julien Veyssier</author>
-	<namespace>ApprovalMainNC</namespace>
+	<namespace>Approval</namespace>
 	<types>
 		<filesystem/>
 		<dav/>
@@ -35,18 +35,18 @@ and can be installed with [this app](https://apps.nextcloud.com/apps/integration
 		<nextcloud min-version="30" max-version="31"/>
 	</dependencies>
 	<settings>
-		<admin>OCA\ApprovalMainNC\Settings\Admin</admin>
-		<admin-section>OCA\ApprovalMainNC\Settings\AdminSection</admin-section>
+		<admin>OCA\Approval\Settings\Admin</admin>
+		<admin-section>OCA\Approval\Settings\AdminSection</admin-section>
 	</settings>
 	<activity>
 		<settings>
-			<setting>OCA\ApprovalMainNC\Activity\Setting</setting>
+			<setting>OCA\Approval\Activity\Setting</setting>
 		</settings>
 		<filters>
-			<filter>OCA\ApprovalMainNC\Activity\Filter</filter>
+			<filter>OCA\Approval\Activity\Filter</filter>
 		</filters>
 		<providers>
-			<provider>OCA\ApprovalMainNC\Activity\ApprovalProvider</provider>
+			<provider>OCA\Approval\Activity\ApprovalProvider</provider>
 		</providers>
 	</activity>
 </info>

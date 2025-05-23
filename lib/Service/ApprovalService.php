@@ -5,11 +5,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-namespace OCA\ApprovalMainNC\Service;
+namespace OCA\Approval\Service;
 
 use DateTime;
-use OCA\ApprovalMainNC\Activity\ActivityManager;
-use OCA\ApprovalMainNC\AppInfo\Application;
+use OCA\Approval\Activity\ActivityManager;
+use OCA\Approval\AppInfo\Application;
 use OCA\DAV\Connector\Sabre\Node as SabreNode;
 use OCP\App\IAppManager;
 use OCP\Files\FileInfo;
