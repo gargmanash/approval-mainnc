@@ -5,14 +5,14 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-namespace OCA\Approval\AppInfo;
+namespace OCA\ApprovalMainNC\AppInfo;
 
-use OCA\Approval\Dashboard\ApprovalPendingWidget;
-use OCA\Approval\Dav\ApprovalPlugin;
-use OCA\Approval\Listener\LoadAdditionalScriptsListener;
-use OCA\Approval\Listener\LoadSidebarScripts;
-use OCA\Approval\Notification\Notifier;
-use OCA\Approval\Service\ApprovalService;
+use OCA\ApprovalMainNC\Dashboard\ApprovalPendingWidget;
+use OCA\ApprovalMainNC\Dav\ApprovalPlugin;
+use OCA\ApprovalMainNC\Listener\LoadAdditionalScriptsListener;
+use OCA\ApprovalMainNC\Listener\LoadSidebarScripts;
+use OCA\ApprovalMainNC\Notification\Notifier;
+use OCA\ApprovalMainNC\Service\ApprovalService;
 
 use OCA\Files\Event\LoadAdditionalScriptsEvent;
 use OCA\Files\Event\LoadSidebar;

@@ -4,9 +4,9 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-namespace OCA\Approval\Listener;
+namespace OCA\ApprovalMainNC\Listener;
 
-use OCA\Approval\AppInfo\Application;
+use OCA\ApprovalMainNC\AppInfo\Application;
 use OCA\Files\Event\LoadAdditionalScriptsEvent;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;

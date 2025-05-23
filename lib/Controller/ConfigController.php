@@ -5,10 +5,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-namespace OCA\Approval\Controller;
+namespace OCA\ApprovalMainNC\Controller;
 
-use OCA\Approval\Service\RuleService;
-use OCA\Approval\Service\UtilsService;
+use OCA\ApprovalMainNC\Service\RuleService;
+use OCA\ApprovalMainNC\Service\UtilsService;
 
 use OCP\App\IAppManager;
 

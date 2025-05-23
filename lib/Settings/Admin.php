@@ -5,9 +5,9 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-namespace OCA\Approval\Settings;
+namespace OCA\ApprovalMainNC\Settings;
 
-use OCA\Approval\AppInfo\Application;
+use OCA\ApprovalMainNC\AppInfo\Application;
 use OCP\AppFramework\Http\TemplateResponse;
 
 use OCP\Settings\ISettings;

@@ -35,18 +35,18 @@ and can be installed with [this app](https://apps.nextcloud.com/apps/integration
 		<nextcloud min-version="30" max-version="31"/>
 	</dependencies>
 	<settings>
-		<admin>OCA\ApprovalMainNC\Settings\Admin</admin>
-		<admin-section>OCA\ApprovalMainNC\Settings\AdminSection</admin-section>
+		<admin>OCA\ApprovalMainNCMainNC\Settings\Admin</admin>
+		<admin-section>OCA\ApprovalMainNCMainNC\Settings\AdminSection</admin-section>
 	</settings>
 	<activity>
 		<settings>
-			<setting>OCA\ApprovalMainNC\Activity\Setting</setting>
+			<setting>OCA\ApprovalMainNCMainNC\Activity\Setting</setting>
 		</settings>
 		<filters>
-			<filter>OCA\ApprovalMainNC\Activity\Filter</filter>
+			<filter>OCA\ApprovalMainNCMainNC\Activity\Filter</filter>
 		</filters>
 		<providers>
-			<provider>OCA\ApprovalMainNC\Activity\ApprovalProvider</provider>
+			<provider>OCA\ApprovalMainNCMainNC\Activity\ApprovalProvider</provider>
 		</providers>
 	</activity>
 </info>

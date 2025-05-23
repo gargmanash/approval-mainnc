@@ -4,9 +4,9 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-namespace OCA\Approval\Dashboard;
+namespace OCA\ApprovalMainNC\Dashboard;
 
-use OCA\Approval\AppInfo\Application;
+use OCA\ApprovalMainNC\AppInfo\Application;
 use OCP\Dashboard\IWidget;
 use OCP\IL10N;
 

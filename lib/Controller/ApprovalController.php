@@ -5,11 +5,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-namespace OCA\Approval\Controller;
+namespace OCA\ApprovalMainNC\Controller;
 
-use OCA\Approval\AppInfo\Application;
-use OCA\Approval\Service\ApprovalService;
-use OCA\Approval\Service\RuleService;
+use OCA\ApprovalMainNC\AppInfo\Application;
+use OCA\ApprovalMainNC\Service\ApprovalService;
+use OCA\ApprovalMainNC\Service\RuleService;
 
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\DataResponse;

@@ -5,10 +5,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-namespace OCA\Approval\Service;
+namespace OCA\ApprovalMainNC\Service;
 
 use DateTime;
-use OCA\Approval\AppInfo\Application;
+use OCA\ApprovalMainNC\AppInfo\Application;
 use OCP\App\IAppManager;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;

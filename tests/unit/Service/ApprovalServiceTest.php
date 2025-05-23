@@ -5,11 +5,11 @@
  */
 
 
-namespace OCA\Approval\Service;
+namespace OCA\ApprovalMainNC\Service;
 
 use ChristophWurst\Nextcloud\Testing\TestCase;
-use OCA\Approval\Activity\ActivityManager;
-use OCA\Approval\AppInfo\Application;
+use OCA\ApprovalMainNC\Activity\ActivityManager;
+use OCA\ApprovalMainNC\AppInfo\Application;
 use OCP\App\IAppManager;
 use OCP\Files\IRootFolder;
 use OCP\IConfig;

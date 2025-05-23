@@ -7,11 +7,11 @@ declare(strict_types=1);
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-namespace OCA\Approval\Migration;
+namespace OCA\ApprovalMainNC\Migration;
 
 use Closure;
-use OCA\Approval\AppInfo\Application;
-use OCA\Approval\Service\UtilsService;
+use OCA\ApprovalMainNC\AppInfo\Application;
+use OCA\ApprovalMainNC\Service\UtilsService;
 use OCP\IConfig;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;

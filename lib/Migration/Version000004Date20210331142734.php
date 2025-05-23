@@ -7,7 +7,7 @@ declare(strict_types=1);
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-namespace OCA\Approval\Migration;
+namespace OCA\ApprovalMainNC\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;

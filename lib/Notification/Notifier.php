@@ -5,9 +5,9 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-namespace OCA\Approval\Notification;
+namespace OCA\ApprovalMainNC\Notification;
 
-use OCA\Approval\AppInfo\Application;
+use OCA\ApprovalMainNC\AppInfo\Application;
 use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserManager;
