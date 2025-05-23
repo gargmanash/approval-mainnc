@@ -49,10 +49,13 @@ class Version000004Date20210427102750 extends SimpleMigrationStep {
 		/** @var ISchemaWrapper $schema */
 		$schema = $schemaClosure();
 		$table = $schema->getTable('approval_rules');
-		$table->addColumn('description', Types::TEXT, [
-			'notnull' => true,
-			'default' => '???',
-		]);
+
+		if (!$table->hasColumn('description')) {
+			$table->addColumn('description', Types::TEXT, [
+				'notnull' => true,
+				'default' => '???',
+			]);
+		}
 		return $schema;
 	}
 
