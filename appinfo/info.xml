@@ -4,8 +4,8 @@
   - SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <info>
-	<id>approval</id>
-	<name>Approval</name>
+	<id>approval-mainnc</id>
+	<name>approval-mainnc</name>
 	<summary>Let users approve or reject files</summary>
 	<description><![CDATA[
 Approve/reject files based on workflows defined by admins.
