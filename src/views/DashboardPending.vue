@@ -17,7 +17,9 @@
 
 		<template #default>
 			<!-- {{ console.log('Items in template:', items) }} --> <!-- Commenting out less reliable log -->
-			<div v-if="items.length === 0">No items to display (from #default slot)</div>
+			<div v-if="items.length === 0">
+				No items to display (from #default slot)
+			</div>
 			<ul>
 				<li v-for="item in items" :key="item.file_id">
 					{{ item.file_name }}
@@ -41,7 +43,7 @@
 
 <script>
 /* eslint-disable no-console */
-import { NcButton, NcDashboardWidget, NcDashboardWidgetItem, NcEmptyContent, NcIconSvgWrapper, useFormatDateTime } from '@nextcloud/vue'
+import { NcButton, NcDashboardWidget, /* NcDashboardWidgetItem, */ NcEmptyContent, NcIconSvgWrapper, useFormatDateTime } from '@nextcloud/vue'
 import { generateUrl, imagePath } from '@nextcloud/router'
 import axios from '@nextcloud/axios'
 import { showError } from '@nextcloud/dialogs'
@@ -51,7 +53,7 @@ export default {
 	components: {
 		NcButton,
 		NcDashboardWidget,
-		NcDashboardWidgetItem,
+		// NcDashboardWidgetItem, // Temporarily commented out for debugging
 		NcEmptyContent,
 		NcIconSvgWrapper,
 	},
@@ -78,16 +80,16 @@ export default {
 		this.relativeDateFormatter = formatter.formatRelativeDateTime || formatter.formatDate || formatter.formatDateTime
 	},
 	async mounted() {
-		console.log('[APPROVAL DASHBOARD] Mounted hook started.');
+		console.log('[APPROVAL DASHBOARD] Mounted hook started.')
 		this.loading = true
 		try {
-			console.log('[APPROVAL DASHBOARD] Before axios.get');
+			console.log('[APPROVAL DASHBOARD] Before axios.get')
 			const response = await axios.get(generateUrl('/ocs/v2.php/apps/approval/api/v1/pendings'))
-			console.log('[APPROVAL DASHBOARD] After axios.get, response status:', response.status);
-			console.log('[APPROVAL DASHBOARD] Response data:', response.data);
+			console.log('[APPROVAL DASHBOARD] After axios.get, response status:', response.status)
+			console.log('[APPROVAL DASHBOARD] Response data:', response.data)
 
 			this.items = response.data.ocs.data.map((pendingItem, index) => {
-				console.log(`[APPROVAL DASHBOARD] Mapping item ${index}:`, pendingItem);
+				console.log(`[APPROVAL DASHBOARD] Mapping item ${index}:`, pendingItem)
 				const activity = pendingItem.activity || {}
 				const requesterName = activity.userName || this.t('approval', 'Unknown user')
 
@@ -118,10 +120,10 @@ export default {
 			})
 			console.log('[APPROVAL DASHBOARD] Generated items in mounted:', this.items)
 		} catch (e) {
-			console.error('[APPROVAL DASHBOARD] Error in mounted hook:', e);
+			console.error('[APPROVAL DASHBOARD] Error in mounted hook:', e)
 			showError(this.t('approval', 'Could not load pending approvals'))
 		} finally {
-			console.log('[APPROVAL DASHBOARD] Mounted hook finally block. Setting loading to false.');
+			console.log('[APPROVAL DASHBOARD] Mounted hook finally block. Setting loading to false.')
 			this.loading = false
 		}
 	},
