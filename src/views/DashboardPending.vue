@@ -57,10 +57,13 @@ export default {
 	},
 	computed: {
 		widgetTitle() {
+			let currentTitle = this.title
 			if (this.items.length > 0) {
-				return `${this.title} (${this.items.length})`
+				currentTitle = `${this.title} (${this.items.length})`
 			}
-			return this.title
+			// eslint-disable-next-line no-console
+			console.log('Computed widgetTitle:', currentTitle, 'Items length:', this.items.length)
+			return currentTitle
 		},
 		generateUrl() {
 			return generateUrl
@@ -68,6 +71,10 @@ export default {
 	},
 	created() {
 		this.fetchPendingApprovals()
+	},
+	updated() {
+		// eslint-disable-next-line no-console
+		console.log('Component updated. Current widgetTitle from this:', this.widgetTitle)
 	},
 	methods: {
 		t(
