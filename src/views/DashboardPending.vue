@@ -26,8 +26,9 @@
 <script>
 import axios from '@nextcloud/axios'
 import { generateOcsUrl } from '@nextcloud/router'
-import { NcDashboardWidget, NcDashboardWidgetItem, useFormatDateTime } from '@nextcloud/vue'
+import { NcDashboardWidget, NcDashboardWidgetItem } from '@nextcloud/vue'
 import { translate as t } from '@nextcloud/l10n'
+import moment from '@nextcloud/moment'
 
 export default {
 	name: 'DashboardPending',
@@ -57,10 +58,9 @@ export default {
 		) {
 			return t(app, text)
 		},
-		getFormattedDate(timestamp) {
-			const formatter = useFormatDateTime()
-			const relativeDateFormatter = formatter.formatRelativeDateTime || formatter.formatDate || formatter.formatDateTime
-			return relativeDateFormatter(timestamp)
+		getFormattedDate(timestampInSeconds) {
+			if (!timestampInSeconds) return ''
+			return moment.unix(timestampInSeconds).format('L LT')
 		},
 		async fetchPendingApprovals() {
 			this.loading = true
@@ -71,16 +71,13 @@ export default {
 				console.log('API Response:', response.data)
 				this.items = response.data.ocs.data.map((pendingItem) => {
 					const apiTimestampInSeconds = pendingItem.activity && pendingItem.activity.timestamp
-					const timestamp = apiTimestampInSeconds
-						? apiTimestampInSeconds * 1000
-						: Date.now()
 
 					return {
 						id: pendingItem.file_id,
 						fileName: pendingItem.file_name,
 						mimetype: pendingItem.mimetype,
-						url: '#', // TODO: Construct actual URL
-						formattedDate: this.getFormattedDate(timestamp),
+						url: '#',
+						formattedDate: this.getFormattedDate(apiTimestampInSeconds),
 						iconUrl: OC.MimeType.getIconUrl(pendingItem.mimetype),
 					}
 				})
