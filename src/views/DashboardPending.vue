@@ -18,7 +18,7 @@
 
 		<template #default>
 			<NcDashboardWidgetItem
-				v-for="item in items" 
+				v-for="item in items"
 				:key="item.id"
 				:title="item.title"
 				:subtitle="item.subtitle"
@@ -93,7 +93,7 @@ export default {
 			this.loading = true
 			try {
 				const url = generateUrl(
-					`/ocs/v2.php/apps/dashboard/api/v1/widget-items/${this.widgetId}?format=json&item_api_version=${this.itemApiVersion}`
+					`/ocs/v2.php/apps/dashboard/api/v1/widget-items/${this.widgetId}?format=json&item_api_version=${this.itemApiVersion}`,
 				)
 				const response = await axios.get(url)
 				if (response.data && response.data.ocs && response.data.ocs.data) {

@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', function() {
 				props: {
 					title: widget.title,
 					widgetId: widget.id,
-					itemApiVersion: widget.item_api_version
+					itemApiVersion: widget.item_api_version,
 				},
 			}),
 		}).$mount(el)
