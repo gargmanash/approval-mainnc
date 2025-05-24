@@ -51,10 +51,10 @@ class Version000004Date20210427102750 extends SimpleMigrationStep {
 		$table = $schema->getTable('approval_rules');
 
 		if (!$table->hasColumn('description')) {
-			$table->addColumn('description', Types::TEXT, [
-				'notnull' => true,
-				'default' => '???',
-			]);
+		$table->addColumn('description', Types::TEXT, [
+			'notnull' => true,
+			'default' => '???',
+		]);
 		}
 		return $schema;
 	}

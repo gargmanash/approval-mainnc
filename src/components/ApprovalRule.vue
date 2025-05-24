@@ -215,7 +215,7 @@ export default {
 		display: flex;
 		align-items: center;
 		> * {
-			margin-right: 4px;
+			margin-inline-end: 4px;
 		}
 	}
 
@@ -244,7 +244,7 @@ export default {
 		.field-label {
 			display: flex;
 			align-items: center;
-			margin-right: 5px;
+			margin-inline-end: 5px;
 			width: 250px;
 			.spacer {
 				flex-grow: 1;

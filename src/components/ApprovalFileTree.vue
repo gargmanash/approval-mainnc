@@ -116,7 +116,7 @@ export default {
 .approval-file-tree {
 	.tree-level {
 		list-style: none;
-		padding-left: 20px;
+		padding-inline-start: 20px;
 	}
 
 	li {
@@ -128,7 +128,7 @@ export default {
 			cursor: pointer;
 
 			.nc-icon-svg {
-				margin-right: 8px;
+				margin-inline-end: 8px;
 			}
 
 			.item-name {
@@ -137,7 +137,7 @@ export default {
 
 			.folder-kpis,
 			.item-rule {
-				margin-left: 8px;
+				margin-inline-start: 8px;
 				font-size: 0.9em;
 				color: var(--color-text-maxcontrast-secondary);
 			}
@@ -151,19 +151,19 @@ export default {
 		.file-status-indicator {
 			display: flex;
 			align-items: center;
-			margin-left: 28px;
+			margin-inline-start: 28px;
 			margin-top: 4px;
 
 			.nc-button {
-				margin-right: 8px;
+				margin-inline-end: 8px;
 			}
 			.status-approved {
 				color: var(--color-success-default);
-				margin-right: 8px;
+				margin-inline-end: 8px;
 			}
 			.status-rejected {
 				color: var(--color-error-default);
-				margin-right: 8px;
+				margin-inline-end: 8px;
 			}
 		}
 	}

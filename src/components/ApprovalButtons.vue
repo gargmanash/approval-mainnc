@@ -77,7 +77,7 @@ export default {
 	button {
 		margin: 0 4px 0 4px;
 		&:first-child {
-			margin-left: 0;
+			margin-inline-start: 0;
 		}
 	}
 }

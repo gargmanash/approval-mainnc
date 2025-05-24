@@ -56,13 +56,19 @@ export default {
 	},
 	async mounted() {
 		try {
+			console.log('[Approval App Dashboard] Fetching pending files...');
 			const response = await axios.get(generateUrl('/ocs/v2.php/apps/approval/api/v1/pendings'))
-			this.pendingFiles = response.data.ocs.data
+			console.log('[Approval App Dashboard] API Response:', response);
+			const pendingData = response.data.ocs.data;
+			console.log('[Approval App Dashboard] Extracted pending data:', pendingData);
+			this.pendingFiles = pendingData;
+			console.log('[Approval App Dashboard] this.pendingFiles after assignment:', this.pendingFiles);
 		} catch (e) {
-			console.error(e)
+			console.error('[Approval App Dashboard] Error loading pending files:', e);
 			showError(t('approval', 'Could not load pending files'))
 		} finally {
-			this.loading = false
+			this.loading = false;
+			console.log('[Approval App Dashboard] Loading set to false. Current pendingFiles length:', this.pendingFiles.length);
 		}
 	},
 	methods: {

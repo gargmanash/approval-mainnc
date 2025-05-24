@@ -132,7 +132,7 @@ export default {
 
 		.approvers label,
 		.rule-title {
-			margin-left: 8px;
+			margin-inline-start: 8px;
 		}
 		.rule-title {
 			font-weight: bold;
@@ -156,7 +156,7 @@ export default {
 					.user-bubble {
 						color: var(--color-main-text);
 						height: 28px;
-						margin-left: 4px;
+						margin-inline-start: 4px;
 					}
 				}
 			}

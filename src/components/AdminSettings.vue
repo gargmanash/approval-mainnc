@@ -417,7 +417,7 @@ export default {
 		}
 
 		#create-tag-input {
-			margin-left: 3px;
+			margin-inline-start: 3px;
 		}
 	}
 

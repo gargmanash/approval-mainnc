@@ -236,7 +236,7 @@ export default {
 	th, td {
 		border: 1px solid var(--color-border);
 		padding: 8px 12px;
-		text-align: left;
+		text-align: start;
 	}
 
 	th {

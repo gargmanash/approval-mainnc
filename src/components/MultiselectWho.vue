@@ -266,13 +266,13 @@ export default {
 .approval-multiselect {
 	.multiselect-name {
 		flex-grow: 1;
-		margin-left: 10px;
+		margin-inline-start: 10px;
 		overflow: hidden;
 		text-overflow: ellipsis;
 	}
 	.multiselect-icon {
 		opacity: 0.5;
-		margin-left: 4px;
+		margin-inline-start: 4px;
 	}
 	.select-suggestion {
 		display: flex;
