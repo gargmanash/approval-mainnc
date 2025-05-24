@@ -31,15 +31,21 @@ export default {
 	components: {
 		NcDashboardWidget,
 	},
+	props: {
+		title: {
+			type: String,
+			required: true,
+		},
+	},
 	data() {
 		return {
-			title: 'TEST TITLE - Pending Approvals', // Static title, t() function removed for testing
+			// title: 'TEST TITLE - Pending Approvals', // Title now comes from props
 			// icon: ApprovalIcon, // Icon prop commented out for testing
 			pendingFiles: [],
 			loading: false, // Initialize as false
 		}
 	},
-	/* // Temporarily comment out the entire mounted hook
+	// Temporarily comment out the entire mounted hook - NOW UNCOMMENTED
 	async mounted() {
 		try {
 			// eslint-disable-next-line no-console
@@ -54,7 +60,7 @@ export default {
 			// eslint-disable-next-line no-console
 			console.log('[Approval App Dashboard] response.data (stringified):', JSON.stringify(response.data))
 
-			if (response.data && response.data.ocs) {
+			if (response.data && response.data.ocs && response.data.ocs.data) {
 				// eslint-disable-next-line no-console
 				console.log('[Approval App Dashboard] response.data.ocs:', response.data.ocs)
 				// eslint-disable-next-line no-console
@@ -71,20 +77,20 @@ export default {
 				console.log('[Approval App Dashboard] this.pendingFiles after assignment:', this.pendingFiles)
 			} else {
 				// eslint-disable-next-line no-console
-				console.error('[Approval App Dashboard] API response.data or response.data.ocs is missing. Response data:', response.data)
+				console.warn('[Approval App Dashboard] API response structure is not as expected:', response.data)
+				this.pendingFiles = []
+				showError(t('approval', 'Could not fetch pending approvals: Invalid API response'))
 			}
-
-		} catch (e) {
+		} catch (error) {
 			// eslint-disable-next-line no-console
-			console.error('[Approval App Dashboard] Error loading pending files:', e)
-			showError(t('approval', 'Could not load pending files')) // t() is still used here, but this is only on error
+			console.error('[Approval App Dashboard] Error fetching pending files:', error)
+			showError(t('approval', 'Could not fetch pending approvals'))
 		} finally {
 			this.loading = false
 			// eslint-disable-next-line no-console
-			console.log('[Approval App Dashboard] Loading set to false. Current pendingFiles length:', this.pendingFiles ? this.pendingFiles.length : 'undefined')
+			console.log('[Approval App Dashboard] Loading set to false. Current pendingFiles length:', this.pendingFiles.length)
 		}
 	},
-	*/
 	methods: {
 		openApprovalCenter() {
 			window.location.href = generateUrl('/apps/approval/approval-center')
@@ -110,4 +116,14 @@ export default {
 		padding: 5px 0;
 	}
 } */
+
+/* Add any specific styles for your widget content here */
+.widget-content ul {
+	list-style: none;
+	padding-left: 0;
+}
+
+.widget-content li {
+	margin-bottom: 8px;
+}
 </style>
