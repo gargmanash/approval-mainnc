@@ -14,7 +14,6 @@
 				<p>LOADING STATE: {{ loading }}</p>
 			</div>
 		</template>
-
 	</NcDashboardWidget>
 </template>
 
@@ -120,7 +119,7 @@ export default {
 /* Add any specific styles for your widget content here */
 .widget-content ul {
 	list-style: none;
-	padding-left: 0;
+	padding-inline-start: 0;
 }
 
 .widget-content li {

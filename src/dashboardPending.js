@@ -12,10 +12,10 @@ import DashboardPending from './views/DashboardPending.vue'
 document.addEventListener('DOMContentLoaded', function() {
 	OCA.Dashboard.register('approval_pending', (el, { widget }) => {
 		new Vue({
-			render: h => h(DashboardPending, { 
-				props: { 
+			render: h => h(DashboardPending, {
+				props: {
 					title: widget.title,
-				}
+				},
 			}),
 		}).$mount(el)
 	})
