@@ -31,15 +31,13 @@
 </template>
 
 <script>
-import { NcDashboardWidget } from '@nextcloud/vue-dashboard'
-import { NcButtonPrimary } from '@nextcloud/vue'
-import { NcIconSvg } from '@nextcloud/vue-material-icons'
+import { NcDashboardWidget, NcButtonPrimary, NcIconSvg } from '@nextcloud/vue'
 import { generateUrl } from '@nextcloud/router'
 import { showError } from '@nextcloud/dialogs'
 import axios from '@nextcloud/axios'
 
 import ApprovalIcon from '../components/icons/GroupIcon.vue' // Assuming this is the desired app icon
-import CheckmarkIcon from '~@nextcloud/vue-material-icons/dist/icons/Checkmark.vue'
+import CheckmarkIcon from '@nextcloud/vue-material-icons/dist/icons/Checkmark.vue'
 
 export default {
 	name: 'DashboardPending',

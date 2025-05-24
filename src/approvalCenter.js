@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { createApp } from 'vue'
+import Vue from 'vue'
 import ApprovalCenterView from './views/ApprovalCenterView.vue'
 
 // Import other necessary Nextcloud Vue components or libraries if needed
@@ -13,7 +13,9 @@ import ApprovalCenterView from './views/ApprovalCenterView.vue'
 const initApprovalCenter = () => {
 	const el = document.getElementById('approval-center-vue-root')
 	if (el) {
-		const app = createApp(ApprovalCenterView)
+		const app = new Vue({
+			render: h => h(ApprovalCenterView),
+		})
 
 		// If using Vuex store:
 		// app.use(store)
@@ -21,7 +23,7 @@ const initApprovalCenter = () => {
 		// Register Nextcloud components globally if needed, e.g.:
 		// app.component('NcButton', NcButton)
 
-		app.mount(el)
+		app.$mount(el)
 	} else {
 		console.error('Approval Center: Could not find root element #approval-center-vue-root')
 	}

@@ -51,10 +51,9 @@
 
 <script>
 import { NcButton, NcIconSvg } from '@nextcloud/vue'
-import FolderIcon from '~@nextcloud/vue-material-icons/dist/icons/Folder.vue'
-import FolderOpenIcon from '~@nextcloud/vue-material-icons/dist/icons/FolderOpen.vue'
-import OpenInNewIcon from '~@nextcloud/vue-material-icons/dist/icons/OpenInNew.vue'
-import { OC } from '@nextcloud/router'
+import FolderIcon from '@nextcloud/vue-material-icons/dist/icons/Folder.vue'
+import FolderOpenIcon from '@nextcloud/vue-material-icons/dist/icons/FolderOpen.vue'
+import OpenInNewIcon from '@nextcloud/vue-material-icons/dist/icons/OpenInNew.vue'
 
 const STATUS_PENDING = 1
 const STATUS_APPROVED = 2
