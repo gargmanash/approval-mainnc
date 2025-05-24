@@ -4,11 +4,16 @@
 -->
 <template>
 	<NcDashboardWidget
-		:title="title"
+		:title="widgetTitle"
 		:items="items"
 		:loading="loading"
 		:empty-content-message="t('approval', 'No pending approvals')"
 		empty-content-icon="icon-checkmark">
+		<template #actions>
+			<NcButton :href="generateUrl('/apps/approval')" v-if="items.length > 0">
+				{{ t('approval', 'View all') }}
+			</NcButton>
+		</template>
 		<template #default="{ item }">
 			<NcDashboardWidgetItem
 				:target-url="item.url"
@@ -19,14 +24,13 @@
 				</template>
 			</NcDashboardWidgetItem>
 		</template>
-		<!-- TODO: Add actions, like a 'View all' button -->
 	</NcDashboardWidget>
 </template>
 
 <script>
 import axios from '@nextcloud/axios'
-import { generateOcsUrl } from '@nextcloud/router'
-import { NcDashboardWidget, NcDashboardWidgetItem } from '@nextcloud/vue'
+import { generateOcsUrl, generateUrl } from '@nextcloud/router'
+import { NcDashboardWidget, NcDashboardWidgetItem, NcButton } from '@nextcloud/vue'
 import { translate as t } from '@nextcloud/l10n'
 import moment from '@nextcloud/moment'
 
@@ -35,6 +39,7 @@ export default {
 	components: {
 		NcDashboardWidget,
 		NcDashboardWidgetItem,
+		NcButton,
 	},
 	props: {
 		title: {
@@ -50,6 +55,17 @@ export default {
 	},
 	created() {
 		this.fetchPendingApprovals()
+	},
+	computed: {
+		widgetTitle() {
+			if (this.items.length > 0) {
+				return `${this.title} (${this.items.length})`
+			}
+			return this.title
+		},
+		generateUrl() {
+			return generateUrl
+		}
 	},
 	methods: {
 		t(
@@ -76,7 +92,7 @@ export default {
 						id: pendingItem.file_id,
 						fileName: pendingItem.file_name,
 						mimetype: pendingItem.mimetype,
-						url: '#',
+						url: generateUrl('/f/' + pendingItem.file_id),
 						formattedDate: this.getFormattedDate(apiTimestampInSeconds),
 						iconUrl: OC.MimeType.getIconUrl(pendingItem.mimetype),
 					}
