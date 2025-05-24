@@ -23,7 +23,7 @@
 				:subtitle="item.subtitle"
 				:link="item.link"
 				:icon="item.iconUrl"
-				:datetime="item.datetime ? new Date(item.datetime) : null" />
+				:datetime="item.activity_timestamp ? new Date(item.activity_timestamp * 1000) : null" />
 		</template>
 
 		<template #empty>
@@ -41,7 +41,8 @@
 </template>
 
 <script>
-import { NcButton, NcDashboardWidget, NcDashboardWidgetItem, NcEmptyContent, NcIconSvgWrapper, useFormatDateTime } from '@nextcloud/vue'
+import { NcButton, NcDashboardWidget, NcDashboardWidgetItem, NcEmptyContent, NcIconSvgWrapper } from '@nextcloud/vue'
+import moment from '@nextcloud/moment'
 import { generateUrl, imagePath } from '@nextcloud/router'
 import axios from '@nextcloud/axios'
 import { showError } from '@nextcloud/dialogs'
@@ -65,69 +66,57 @@ export default {
 		return {
 			items: [],
 			loading: true,
-			dateTimeFormatter: null, // To store the formatter instance
 		}
 	},
 	computed: {
 		openApprovalCenterUrl() {
-			return generateUrl('/apps/approval/approval-center')
+			return generateUrl('/apps/approval/')
 		},
 	},
-	created() {
-		const formatter = useFormatDateTime()
-		this.dateTimeFormatter = formatter.formatRelativeDateTime || formatter.formatDate
-	},
 	async mounted() {
-		await this.fetchPendingApprovals()
+		this.loading = true
+		try {
+			const response = await axios.get(generateUrl('/ocs/v2.php/apps/approval/api/v1/pendings'))
+			this.items = response.data.ocs.data.map(pendingItem => {
+				const file = pendingItem.file || {}
+				const activity = pendingItem.activity || {}
+				const requesterName = activity.userName || this.t('approval', 'Unknown user')
+
+				// Construct subtitle
+				let subtitle = this.t('approval', 'Requested by {user}', { user: requesterName })
+				if (activity.timestamp) {
+					subtitle += ` - ${moment.formatRelativeDate(activity.timestamp * 1000)}`
+				}
+
+				// Construct icon URL (similar to PHP widget logic)
+				let iconUrl = imagePath('core', 'actions/details') // Default icon
+				if (file.mimetype && file.mimetype.startsWith('image/')) {
+					iconUrl = generateUrl(`/apps/files/api/v1/thumbnail/${file.id}/32/32`)
+				} else if (file.mimetype) {
+					iconUrl = imagePath('core', `filetypes/${file.mimetype.replace('/', '-')}.svg`)
+				}
+
+				return {
+					file_id: file.id,
+					file_name: file.name || this.t('approval', 'Unknown file'),
+					assignee: pendingItem.assignee?.displayName || this.t('approval', 'Unknown user'),
+					activity_timestamp: activity.timestamp || Math.floor(Date.now() / 1000),
+					mimetype: file.mimetype,
+					link: generateUrl(`/apps/files/files/${file.id}`),
+					iconUrl,
+					subtitle,
+				}
+			})
+		} catch (e) {
+			console.error(e)
+			showError(this.t('approval', 'Could not load pending approvals'))
+		} finally {
+			this.loading = false
+		}
 	},
 	methods: {
-		async fetchPendingApprovals() {
-			this.loading = true
-			try {
-				const response = await axios.get(generateUrl('/ocs/v2.php/apps/approval/api/v1/pendings'))
-				if (response.data && response.data.ocs && Array.isArray(response.data.ocs.data)) {
-					this.items = response.data.ocs.data.map(pendingItem => {
-						const activity = pendingItem.activity || {}
-						const requesterName = activity.userName || this.t('approval', 'Unknown user')
-						const timestamp = activity.timestamp || Math.floor(Date.now() / 1000)
-						// Construct subtitle
-						let subtitle = this.t('approval', 'Requested by {user}', { user: requesterName })
-						if (activity.timestamp) {
-							subtitle += ` - ${this.dateTimeFormatter(activity.timestamp * 1000)}`
-						}
-
-						// Construct icon URL (similar to PHP widget logic)
-						let iconUrlValue = imagePath('core', `filetypes/${pendingItem.mimetype.split('/')[0]}.svg`)
-						try {
-							if (iconUrlValue.includes('/.') || !pendingItem.mimetype) {
-								iconUrlValue = imagePath('approval', 'app.svg')
-							}
-						} catch (e) {
-							iconUrlValue = imagePath('approval', 'app.svg')
-						}
-
-						const linkValue = generateUrl(`/apps/approval/approval-center?file_id=${pendingItem.file_id}`)
-
-						return {
-							file_id: pendingItem.file_id,
-							file_name: pendingItem.file_name,
-							subtitle,
-							link: linkValue,
-							iconUrl: iconUrlValue,
-							datetime: timestamp * 1000,
-						}
-					})
-				} else {
-					this.items = []
-					showError(this.t('approval', 'Could not fetch pending approvals: Invalid API response structure'))
-				}
-			} catch (e) {
-				console.error('Error fetching pending approvals:', e)
-				showError(this.t('approval', 'Could not fetch pending approvals'))
-				this.items = []
-			} finally {
-				this.loading = false
-			}
+		t(scope, text, params) {
+			return t(scope, text, params)
 		},
 		openApprovalCenter() {
 			window.location.href = this.openApprovalCenterUrl
@@ -138,23 +127,13 @@ export default {
 
 <style scoped lang="scss">
 .empty-content {
-	text-align: center;
-	padding: 20px;
-
-	.empty-content-icon {
-		margin-bottom: 10px;
-	}
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	height: 100%;
+	flex-direction: column;
 }
 
-/* .pending-files-summary {
-	list-style: none;
-	padding-left: 0;
-	li {
-		padding: 5px 0;
-	}
-} */
-
-/* Add any specific styles for your widget content here */
 .widget-content ul {
 	list-style: none;
 	padding-inline-start: 0;
