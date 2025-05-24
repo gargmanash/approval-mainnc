@@ -3,7 +3,7 @@
   - SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <template>
-	<NcDashboardWidget :title="title" :items="items" :loading="loading">
+	<NcDashboardWidget :title="title" :loading="loading">
 		<IconApproval v-if="false" />
 		<template #actions>
 			<!-- Actions slot can be used for buttons like 'View all' or refresh -->
@@ -16,8 +16,9 @@
 			</NcButton>
 		</template>
 
-		<template #default="{ item }">
+		<template #default>
 			<NcDashboardWidgetItem
+				v-for="item in items" 
 				:key="item.id"
 				:title="item.title"
 				:subtitle="item.subtitle"
@@ -27,12 +28,12 @@
 		</template>
 
 		<template #empty>
-			<div class="empty-content">
+			<div v-if="!loading && items.length === 0" class="empty-content">
 				<NcEmptyContent
 					:title="t('approval', 'No pending approvals')"
 					:description="t('approval', 'You have no files awaiting your approval at the moment.')">
 					<template #icon>
-						<NcIconSvgWrapper :icon="iconApproval" :size="64" />
+						<NcIconSvgWrapper :icon="iconApprovalComponent" :size="64" />
 					</template>
 				</NcEmptyContent>
 			</div>
@@ -43,8 +44,10 @@
 <script>
 import { NcButton, NcDashboardWidget, NcDashboardWidgetItem, NcEmptyContent, NcIconSvgWrapper } from '@nextcloud/vue'
 import { generateUrl } from '@nextcloud/router'
+import axios from '@nextcloud/axios'
+import { showError } from '@nextcloud/dialogs'
 
-import IconApproval from '../components/icons/GroupIcon.vue'
+import IconApprovalComponent from '../components/icons/GroupIcon.vue'
 
 export default {
 	name: 'DashboardPending',
@@ -54,25 +57,27 @@ export default {
 		NcDashboardWidgetItem,
 		NcEmptyContent,
 		NcIconSvgWrapper,
-		IconApproval,
+		IconApproval: IconApprovalComponent,
 	},
 	props: {
 		title: {
 			type: String,
 			required: true,
 		},
-		items: {
-			type: Array,
-			default: () => [],
+		widgetId: {
+			type: String,
+			required: true,
 		},
-		loading: {
-			type: Boolean,
-			default: false,
+		itemApiVersion: {
+			type: [String, Number],
+			required: true,
 		},
 	},
 	data() {
 		return {
-			iconApproval: IconApproval,
+			iconApprovalComponent: IconApprovalComponent,
+			items: [],
+			loading: true,
 		}
 	},
 	computed: {
@@ -80,7 +85,31 @@ export default {
 			return generateUrl('/apps/approval/approval-center')
 		},
 	},
+	async mounted() {
+		await this.fetchItems()
+	},
 	methods: {
+		async fetchItems() {
+			this.loading = true
+			try {
+				const url = generateUrl(
+					`/ocs/v2.php/apps/dashboard/api/v1/widget-items/${this.widgetId}?format=json&item_api_version=${this.itemApiVersion}`
+				)
+				const response = await axios.get(url)
+				if (response.data && response.data.ocs && response.data.ocs.data) {
+					this.items = response.data.ocs.data
+				} else {
+					this.items = []
+					showError(this.t('approval', 'Could not fetch pending approvals: Invalid API response'))
+				}
+			} catch (e) {
+				console.error(e)
+				showError(this.t('approval', 'Could not fetch pending approvals'))
+				this.items = []
+			} finally {
+				this.loading = false
+			}
+		},
 		openApprovalCenter() {
 			window.location.href = this.openApprovalCenterUrl
 		},

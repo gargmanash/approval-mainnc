@@ -15,6 +15,8 @@ document.addEventListener('DOMContentLoaded', function() {
 			render: h => h(DashboardPending, {
 				props: {
 					title: widget.title,
+					widgetId: widget.id,
+					itemApiVersion: widget.item_api_version
 				},
 			}),
 		}).$mount(el)
