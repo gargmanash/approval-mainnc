@@ -4,6 +4,7 @@
 -->
 <template>
 	<NcDashboardWidget :title="title" :items="items" :loading="loading">
+		<IconApproval v-if="false" />
 		<template #actions>
 			<!-- Actions slot can be used for buttons like 'View all' or refresh -->
 			<NcButton
