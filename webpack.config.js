@@ -25,6 +25,7 @@ webpackConfig.entry = {
 	approvalTab: { import: path.join(__dirname, 'src', 'approvalTab.js'), filename: appId + '-approvalTab.js' },
 	init: { import: path.join(__dirname, 'src', 'files/init.js'), filename: appId + '-init.js' },
 	approvalcenter: path.join(__dirname, 'src', 'approvalCenter.js'),
+	approvalAnalytics: { import: path.join(__dirname, 'src', 'approvalAnalytics.js'), filename: appId + '-approvalAnalytics.js' },
 }
 
 webpackConfig.plugins.push(

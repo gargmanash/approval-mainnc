@@ -22,7 +22,7 @@
 			</template>
 		</NcDashboardWidget>
 		<div v-if="items.length > 0 && !loading" class="dashboard-actions-footer">
-			<NcButton :href="generateUrl('/apps/approval')">
+			<NcButton :href="generateUrl('/apps/approval/analytics')">
 				{{ t('approval', 'View all') }}
 			</NcButton>
 		</div>
@@ -57,16 +57,15 @@ export default {
 	},
 	computed: {
 		widgetTitle() {
-			let currentTitle = this.title
-			if (this.items.length > 0) {
-				currentTitle = `${this.title} (${this.items.length})`
-			}
 			// eslint-disable-next-line no-console
-			console.log('Computed widgetTitle:', currentTitle, 'Items length:', this.items.length)
-			return currentTitle
+			console.log('Computing widgetTitle. Items length:', this.items.length)
+			if (this.items.length > 0) {
+				return `Pending (${this.items.length})`
+			}
+			return 'Pending Approvals (Default)' // Simplified default
 		},
 		generateUrl() {
-			return generateUrl
+			return generateUrl // Expose to template
 		}
 	},
 	created() {
@@ -74,7 +73,7 @@ export default {
 	},
 	updated() {
 		// eslint-disable-next-line no-console
-		console.log('Component updated. Current widgetTitle from this:', this.widgetTitle)
+		console.log('Component updated. Current widgetTitle from this:', this.widgetTitle, 'Items length:', this.items.length)
 	},
 	methods: {
 		t(
