@@ -41,7 +41,7 @@
 </template>
 
 <script>
-import { NcButton, NcDashboardWidget, NcDashboardWidgetItem, NcEmptyContent, NcIconSvgWrapper } from '@nextcloud/vue'
+import { NcButton, NcDashboardWidget, NcDashboardWidgetItem, NcEmptyContent, NcIconSvgWrapper, useFormatDateTime } from '@nextcloud/vue'
 import { generateUrl, imagePath } from '@nextcloud/router'
 import axios from '@nextcloud/axios'
 import { showError } from '@nextcloud/dialogs'
@@ -65,12 +65,17 @@ export default {
 		return {
 			items: [],
 			loading: true,
+			relativeDateFormatter: null,
 		}
 	},
 	computed: {
 		openApprovalCenterUrl() {
 			return generateUrl('/apps/approval/')
 		},
+	},
+	created() {
+		const formatter = useFormatDateTime()
+		this.relativeDateFormatter = formatter.formatRelativeDateTime || formatter.formatDate || formatter.formatDateTime
 	},
 	async mounted() {
 		this.loading = true
@@ -83,8 +88,8 @@ export default {
 
 				// Construct subtitle
 				let subtitle = this.t('approval', 'Requested by {user}', { user: requesterName })
-				if (activity.timestamp) {
-					subtitle += ` - ${OC.Util.formatRelativeDate(activity.timestamp * 1000)}`
+				if (activity.timestamp && this.relativeDateFormatter) {
+					subtitle += ` - ${this.relativeDateFormatter(activity.timestamp * 1000)}`
 				}
 
 				// Construct icon URL (similar to PHP widget logic)
