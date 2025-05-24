@@ -17,20 +17,17 @@
 </template>
 
 <script>
-import { NcDashboardWidget, NcButton } from '@nextcloud/vue'
+import { NcDashboardWidget } from '@nextcloud/vue'
 import { generateUrl } from '@nextcloud/router'
 import { showError } from '@nextcloud/dialogs'
 import axios from '@nextcloud/axios'
 
 import ApprovalIcon from '../components/icons/GroupIcon.vue' // Assuming this is the desired app icon
-import CheckIcon from 'vue-material-design-icons/Check.vue'
 
 export default {
 	name: 'DashboardPending',
 	components: {
 		NcDashboardWidget,
-		NcButton,
-		CheckIcon,
 	},
 	data() {
 		return {
