@@ -59,14 +59,35 @@ export default {
 			// eslint-disable-next-line no-console
 			console.log('[Approval App Dashboard] Fetching pending files...')
 			const response = await axios.get(generateUrl('/ocs/v2.php/apps/approval/api/v1/pendings'))
+
 			// eslint-disable-next-line no-console
-			console.log('[Approval App Dashboard] API Response:', response)
-			const pendingData = response.data.ocs.data
+			console.log('[Approval App Dashboard] Raw API Response object:', response)
+
 			// eslint-disable-next-line no-console
-			console.log('[Approval App Dashboard] Extracted pending data:', pendingData)
-			this.pendingFiles = pendingData
+			console.log('[Approval App Dashboard] response.data:', response.data)
 			// eslint-disable-next-line no-console
-			console.log('[Approval App Dashboard] this.pendingFiles after assignment:', this.pendingFiles)
+			console.log('[Approval App Dashboard] response.data (stringified):', JSON.stringify(response.data))
+
+			if (response.data && response.data.ocs) {
+				// eslint-disable-next-line no-console
+				console.log('[Approval App Dashboard] response.data.ocs:', response.data.ocs)
+				// eslint-disable-next-line no-console
+				console.log('[Approval App Dashboard] response.data.ocs (stringified):', JSON.stringify(response.data.ocs))
+
+				const pendingData = response.data.ocs.data
+				// eslint-disable-next-line no-console
+				console.log('[Approval App Dashboard] Extracted pendingData (response.data.ocs.data):', pendingData)
+				// eslint-disable-next-line no-console
+				console.log('[Approval App Dashboard] Extracted pendingData (stringified):', JSON.stringify(pendingData))
+
+				this.pendingFiles = pendingData
+				// eslint-disable-next-line no-console
+				console.log('[Approval App Dashboard] this.pendingFiles after assignment:', this.pendingFiles)
+			} else {
+				// eslint-disable-next-line no-console
+				console.error('[Approval App Dashboard] API response.data or response.data.ocs is missing. Response data:', response.data)
+			}
+
 		} catch (e) {
 			// eslint-disable-next-line no-console
 			console.error('[Approval App Dashboard] Error loading pending files:', e)
@@ -74,7 +95,7 @@ export default {
 		} finally {
 			this.loading = false
 			// eslint-disable-next-line no-console
-			console.log('[Approval App Dashboard] Loading set to false. Current pendingFiles length:', this.pendingFiles.length)
+			console.log('[Approval App Dashboard] Loading set to false. Current pendingFiles length:', this.pendingFiles ? this.pendingFiles.length : 'undefined')
 		}
 	},
 	methods: {
