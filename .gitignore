@@ -13,3 +13,4 @@ build
 .php-cs-fixer.cache
 /js
 notes-main/
+approval-old/

@@ -42,7 +42,6 @@
 
 <script>
 import { NcButton, NcDashboardWidget, NcDashboardWidgetItem, NcEmptyContent, NcIconSvgWrapper } from '@nextcloud/vue'
-import moment from '@nextcloud/moment'
 import { generateUrl, imagePath } from '@nextcloud/router'
 import axios from '@nextcloud/axios'
 import { showError } from '@nextcloud/dialogs'
@@ -85,7 +84,7 @@ export default {
 				// Construct subtitle
 				let subtitle = this.t('approval', 'Requested by {user}', { user: requesterName })
 				if (activity.timestamp) {
-					subtitle += ` - ${moment.formatRelativeDate(activity.timestamp * 1000)}`
+					subtitle += ` - ${OC.Util.formatRelativeDate(activity.timestamp * 1000)}`
 				}
 
 				// Construct icon URL (similar to PHP widget logic)
