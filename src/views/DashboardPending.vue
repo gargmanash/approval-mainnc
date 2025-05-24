@@ -3,31 +3,27 @@
   - SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <template>
-	<NcDashboardWidget title="Super Simple Test">
-		<template #actions>
-			<NcButton type="tertiary">
-				Test Action
-			</NcButton>
+	<NcDashboardWidget title="Super Simple Test" :items="items" :loading="loading">
+		<template #default="{ item }">
+			<NcDashboardWidgetItem
+				:main-text="item.name"
+				sub-text="This is a static sub-text" />
 		</template>
-		<template #default>
-			<p>This is static default slot content.</p>
-		</template>
-		<template #empty>
-			<p>This is static empty slot content.</p>
-		</template>
+		<!-- Actions slot can be re-added later if default content works -->
+		<!-- Empty slot removed for this minimal test -->
 	</NcDashboardWidget>
 </template>
 
 <script>
 /* eslint-disable no-console */
-// Importing only what's absolutely necessary for this static test
-import { NcDashboardWidget, NcButton } from '@nextcloud/vue'
+// Importing NcDashboardWidgetItem as well
+import { NcDashboardWidget, NcDashboardWidgetItem } from '@nextcloud/vue'
 
 export default {
 	name: 'DashboardPending',
 	components: {
 		NcDashboardWidget,
-		NcButton,
+		NcDashboardWidgetItem,
 	},
 	props: {
 		// title prop is passed by dashboardPending.js, let's keep it defined
@@ -37,7 +33,16 @@ export default {
 			default: 'Pending Approvals (fallback title)',
 		},
 	},
-	// No data, no methods, no lifecycle hooks for this minimal test
+	data() {
+		return {
+			loading: false,
+			items: [
+				{ id: 1, name: 'Static Test Item 1' },
+				{ id: 2, name: 'Static Test Item 2' },
+			],
+		}
+	},
+	// No methods, no lifecycle hooks for this minimal test
 }
 </script>
 
