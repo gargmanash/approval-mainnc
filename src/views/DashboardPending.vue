@@ -80,10 +80,16 @@ export default {
 		this.relativeDateFormatter = formatter.formatRelativeDateTime || formatter.formatDate || formatter.formatDateTime
 	},
 	async mounted() {
+		console.log('[APPROVAL DASHBOARD] Mounted hook started.');
 		this.loading = true
 		try {
+			console.log('[APPROVAL DASHBOARD] Before axios.get');
 			const response = await axios.get(generateUrl('/ocs/v2.php/apps/approval/api/v1/pendings'))
-			this.items = response.data.ocs.data.map(pendingItem => {
+			console.log('[APPROVAL DASHBOARD] After axios.get, response status:', response.status);
+			console.log('[APPROVAL DASHBOARD] Response data:', response.data);
+
+			this.items = response.data.ocs.data.map((pendingItem, index) => {
+				console.log(`[APPROVAL DASHBOARD] Mapping item ${index}:`, pendingItem);
 				const activity = pendingItem.activity || {}
 				const requesterName = activity.userName || this.t('approval', 'Unknown user')
 
@@ -112,11 +118,12 @@ export default {
 					subtitle,
 				}
 			})
-			console.log('Generated items in mounted:', this.items)
+			console.log('[APPROVAL DASHBOARD] Generated items in mounted:', this.items)
 		} catch (e) {
-			console.error(e)
+			console.error('[APPROVAL DASHBOARD] Error in mounted hook:', e);
 			showError(this.t('approval', 'Could not load pending approvals'))
 		} finally {
+			console.log('[APPROVAL DASHBOARD] Mounted hook finally block. Setting loading to false.');
 			this.loading = false
 		}
 	},
