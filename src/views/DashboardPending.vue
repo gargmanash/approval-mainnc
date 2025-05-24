@@ -16,15 +16,13 @@
 		</template>
 
 		<template #default>
-			{{ console.log('Items in template:', items) }}
-			<NcDashboardWidgetItem
-				v-for="item in items"
-				:key="item.file_id"
-				:title="item.file_name"
-				:subtitle="item.subtitle"
-				:link="item.link"
-				:icon="item.iconUrl"
-				:datetime="item.activity_timestamp ? new Date(item.activity_timestamp * 1000) : null" />
+			<!-- {{ console.log('Items in template:', items) }} --> <!-- Commenting out less reliable log -->
+			<div v-if="items.length === 0">No items to display (from #default slot)</div>
+			<ul>
+				<li v-for="item in items" :key="item.file_id">
+					{{ item.file_name }}
+				</li>
+			</ul>
 		</template>
 
 		<template #empty>
