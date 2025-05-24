@@ -10,21 +10,19 @@
 				v-if="items.length > 0 || !loading"
 				:aria-label="t('approval', 'View all pending approvals')"
 				:href="openApprovalCenterUrl"
-				type="tertiary"
-			>
+				type="tertiary">
 				{{ t('approval', 'View all') }}
 			</NcButton>
 		</template>
 
 		<template #default="{ item }">
 			<NcDashboardWidgetItem
-				:key="item.id" 
+				:key="item.id"
 				:title="item.title"
 				:subtitle="item.subtitle"
 				:link="item.link"
-				:icon="item.iconUrl ? item.iconUrl : item.iconClass" 
-				:datetime="item.date ? new Date(item.date) : null"
-			/>
+				:icon="item.iconUrl ? item.iconUrl : item.iconClass"
+				:datetime="item.date ? new Date(item.date) : null" />
 		</template>
 
 		<template #empty>
@@ -45,7 +43,7 @@
 import { NcButton, NcDashboardWidget, NcDashboardWidgetItem, NcEmptyContent, NcIconSvgWrapper } from '@nextcloud/vue'
 import { generateUrl } from '@nextcloud/router'
 
-import IconApproval from '../components/icons/IconApproval.vue'
+import IconApproval from '../components/icons/GroupIcon.vue'
 
 export default {
 	name: 'DashboardPending',
