@@ -16,6 +16,7 @@
 		</template>
 
 		<template #default>
+			{{ console.log('Items in template:', items) }}
 			<NcDashboardWidgetItem
 				v-for="item in items"
 				:key="item.file_id"
@@ -41,6 +42,7 @@
 </template>
 
 <script>
+/* eslint-disable no-console */
 import { NcButton, NcDashboardWidget, NcDashboardWidgetItem, NcEmptyContent, NcIconSvgWrapper, useFormatDateTime } from '@nextcloud/vue'
 import { generateUrl, imagePath } from '@nextcloud/router'
 import axios from '@nextcloud/axios'
@@ -82,7 +84,6 @@ export default {
 		try {
 			const response = await axios.get(generateUrl('/ocs/v2.php/apps/approval/api/v1/pendings'))
 			this.items = response.data.ocs.data.map(pendingItem => {
-				const file = pendingItem.file || {}
 				const activity = pendingItem.activity || {}
 				const requesterName = activity.userName || this.t('approval', 'Unknown user')
 
@@ -92,25 +93,26 @@ export default {
 					subtitle += ` - ${this.relativeDateFormatter(activity.timestamp * 1000)}`
 				}
 
-				// Construct icon URL (similar to PHP widget logic)
+				// Construct icon URL
 				let iconUrl = imagePath('core', 'actions/details') // Default icon
-				if (file.mimetype && file.mimetype.startsWith('image/')) {
-					iconUrl = generateUrl(`/apps/files/api/v1/thumbnail/${file.id}/32/32`)
-				} else if (file.mimetype) {
-					iconUrl = imagePath('core', `filetypes/${file.mimetype.replace('/', '-')}.svg`)
+				if (pendingItem.mimetype && pendingItem.mimetype.startsWith('image/')) {
+					iconUrl = generateUrl(`/apps/files/api/v1/thumbnail/${pendingItem.file_id}/32/32`)
+				} else if (pendingItem.mimetype) {
+					iconUrl = imagePath('core', `filetypes/${pendingItem.mimetype.replace('/', '-')}.svg`)
 				}
 
 				return {
-					file_id: file.id,
-					file_name: file.name || this.t('approval', 'Unknown file'),
+					file_id: pendingItem.file_id,
+					file_name: pendingItem.file_name || this.t('approval', 'Unknown file'),
 					assignee: pendingItem.assignee?.displayName || this.t('approval', 'Unknown user'),
 					activity_timestamp: activity.timestamp || Math.floor(Date.now() / 1000),
-					mimetype: file.mimetype,
-					link: generateUrl(`/apps/files/files/${file.id}`),
+					mimetype: pendingItem.mimetype,
+					link: generateUrl(`/apps/files/files/${pendingItem.file_id}`),
 					iconUrl,
 					subtitle,
 				}
 			})
+			console.log('Generated items in mounted:', this.items)
 		} catch (e) {
 			console.error(e)
 			showError(this.t('approval', 'Could not load pending approvals'))
