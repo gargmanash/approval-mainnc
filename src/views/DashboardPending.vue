@@ -22,7 +22,7 @@
 			</template>
 		</NcDashboardWidget>
 		<div v-if="items.length > 0 && !loading" class="dashboard-actions-footer">
-			<NcButton :href="generateUrl('/apps/approval/analytics')">
+			<NcButton :href="generateUrl('/apps/approval/approval-center')">
 				{{ t('approval', 'View all') }}
 			</NcButton>
 		</div>
