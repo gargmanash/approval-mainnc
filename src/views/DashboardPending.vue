@@ -57,24 +57,24 @@ export default {
 	async mounted() {
 		try {
 			// eslint-disable-next-line no-console
-			console.log('[Approval App Dashboard] Fetching pending files...');
+			console.log('[Approval App Dashboard] Fetching pending files...')
 			const response = await axios.get(generateUrl('/ocs/v2.php/apps/approval/api/v1/pendings'))
 			// eslint-disable-next-line no-console
-			console.log('[Approval App Dashboard] API Response:', response);
+			console.log('[Approval App Dashboard] API Response:', response)
 			const pendingData = response.data.ocs.data
 			// eslint-disable-next-line no-console
-			console.log('[Approval App Dashboard] Extracted pending data:', pendingData);
+			console.log('[Approval App Dashboard] Extracted pending data:', pendingData)
 			this.pendingFiles = pendingData
 			// eslint-disable-next-line no-console
-			console.log('[Approval App Dashboard] this.pendingFiles after assignment:', this.pendingFiles);
+			console.log('[Approval App Dashboard] this.pendingFiles after assignment:', this.pendingFiles)
 		} catch (e) {
 			// eslint-disable-next-line no-console
-			console.error('[Approval App Dashboard] Error loading pending files:', e);
+			console.error('[Approval App Dashboard] Error loading pending files:', e)
 			showError(t('approval', 'Could not load pending files'))
 		} finally {
 			this.loading = false
 			// eslint-disable-next-line no-console
-			console.log('[Approval App Dashboard] Loading set to false. Current pendingFiles length:', this.pendingFiles.length);
+			console.log('[Approval App Dashboard] Loading set to false. Current pendingFiles length:', this.pendingFiles.length)
 		}
 	},
 	methods: {
