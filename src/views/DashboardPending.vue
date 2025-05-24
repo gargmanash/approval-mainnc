@@ -45,12 +45,9 @@ export default {
 		return {
 			loading: true,
 			items: [],
-			dateTimeFormatterFunc: null,
 		}
 	},
 	created() {
-		const formatter = useFormatDateTime()
-		this.dateTimeFormatterFunc = formatter.formatRelativeDateTime || formatter.formatDate || formatter.formatDateTime
 		this.fetchPendingApprovals()
 	},
 	methods: {
@@ -59,6 +56,11 @@ export default {
 			text,
 		) {
 			return t(app, text)
+		},
+		getFormattedDate(timestamp) {
+			const formatter = useFormatDateTime()
+			const relativeDateFormatter = formatter.formatRelativeDateTime || formatter.formatDate || formatter.formatDateTime
+			return relativeDateFormatter(timestamp)
 		},
 		async fetchPendingApprovals() {
 			this.loading = true
@@ -78,7 +80,7 @@ export default {
 						fileName: pendingItem.file_name,
 						mimetype: pendingItem.mimetype,
 						url: '#', // TODO: Construct actual URL
-						formattedDate: this.dateTimeFormatterFunc(timestamp),
+						formattedDate: this.getFormattedDate(timestamp),
 						iconUrl: OC.MimeType.getIconUrl(pendingItem.mimetype),
 					}
 				})
