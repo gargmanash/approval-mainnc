@@ -46,7 +46,7 @@ import { NcButton, NcDashboardWidget, NcDashboardWidgetItem, NcEmptyContent, NcI
 import { generateUrl, imagePath } from '@nextcloud/router'
 import axios from '@nextcloud/axios'
 import { showError } from '@nextcloud/dialogs'
-import { formatRelativeDate } from '@nextcloud/vue-components/dist/utils/formatRelativeDate.js'
+import { formatRelativeDate } from '@nextcloud/vue-components'
 
 import IconApprovalComponent from '../components/icons/GroupIcon.vue'
 
@@ -99,26 +99,24 @@ export default {
 						}
 
 						// Construct icon URL (similar to PHP widget logic)
-						let iconUrl = imagePath('core', `filetypes/${pendingItem.mimetype.split('/')[0]}.svg`)
-						// Basic check if icon path seems invalid or too generic, then fallback
-						// This check might need refinement based on actual imagePath behavior for non-existent icons.
+						let iconUrlValue = imagePath('core', `filetypes/${pendingItem.mimetype.split('/')[0]}.svg`)
 						try {
-							// A more robust check would be to see if the image actually loads, but that's complex here.
-							// For now, assume if it contains '/.' it might be a bad path from strtok if mimetype was empty.
-							if (iconUrl.includes('/.') || !pendingItem.mimetype) {
-								iconUrl = imagePath('approval', 'app.svg')
+							if (iconUrlValue.includes('/.') || !pendingItem.mimetype) {
+								iconUrlValue = imagePath('approval', 'app.svg')
 							}
-						} catch (e) { // In case imagePath throws for some reason with bad inputs
-							iconUrl = imagePath('approval', 'app.svg')
+						} catch (e) {
+							iconUrlValue = imagePath('approval', 'app.svg')
 						}
+
+						const linkValue = generateUrl(`/apps/approval/approval-center?file_id=${pendingItem.file_id}`)
 
 						return {
 							file_id: pendingItem.file_id,
 							file_name: pendingItem.file_name,
-							subtitle: subtitle,
-							link: generateUrl(`/apps/approval/approval-center?file_id=${pendingItem.file_id}`), // Or direct file link if possible
-							iconUrl: iconUrl,
-							datetime: timestamp * 1000, // NcDashboardWidgetItem expects ms
+							subtitle,
+							link: linkValue,
+							iconUrl: iconUrlValue,
+							datetime: timestamp * 1000,
 						}
 					})
 				} else {
