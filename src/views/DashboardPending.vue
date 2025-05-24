@@ -66,7 +66,7 @@ export default {
 		},
 		generateUrl() {
 			return generateUrl // Expose to template
-		}
+		},
 	},
 	created() {
 		this.fetchPendingApprovals()
