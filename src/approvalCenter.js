@@ -13,7 +13,8 @@ import ApprovalCenterView from './views/ApprovalCenterView.vue'
 const initApprovalCenter = () => {
 	const el = document.getElementById('approval-center-vue-root')
 	if (el) {
-		const app = new Vue({
+		el.textContent = 'JavaScript reached initApprovalCenter and found the root element.';
+		/* const app = new Vue({
 			render: h => h(ApprovalCenterView),
 		})
 
@@ -23,7 +24,7 @@ const initApprovalCenter = () => {
 		// Register Nextcloud components globally if needed, e.g.:
 		// app.component('NcButton', NcButton)
 
-		app.$mount(el)
+		app.$mount(el) */
 	} else {
 		console.error('Approval Center: Could not find root element #approval-center-vue-root')
 	}
