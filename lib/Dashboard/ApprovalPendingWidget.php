@@ -104,4 +104,11 @@ class ApprovalPendingWidget implements IWidget, IAPIWidget {
 		}
 		return $widgetItems;
 	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function getItemApiVersion(): int {
+		return 1;
+	}
 }
