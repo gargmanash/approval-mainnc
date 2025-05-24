@@ -16,15 +16,7 @@
 		</template>
 
 		<template #default>
-			<!-- {{ console.log('Items in template:', items) }} --> <!-- Commenting out less reliable log -->
-			<div v-if="items.length === 0">
-				No items to display (from #default slot)
-			</div>
-			<ul>
-				<li v-for="item in items" :key="item.file_id">
-					{{ item.file_name }}
-				</li>
-			</ul>
+			<div>Hello from the default slot!</div>
 		</template>
 
 		<template #empty>
