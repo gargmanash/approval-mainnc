@@ -3,96 +3,87 @@
   - SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <template>
-	<NcDashboardWidget :title="title">
+	<NcDashboardWidget :title="title" :items="items" :loading="loading">
 		<template #actions>
-			<p>TEST ACTION SLOT</p>
+			<!-- Actions slot can be used for buttons like 'View all' or refresh -->
+			<NcButton
+				v-if="items.length > 0 || !loading"
+				:aria-label="t('approval', 'View all pending approvals')"
+				:href="openApprovalCenterUrl"
+				type="tertiary"
+			>
+				{{ t('approval', 'View all') }}
+			</NcButton>
 		</template>
 
-		<template #default>
-			<div>
-				<p>TEST MAIN SLOT - PENDING COUNT: {{ pendingFiles.length }}</p>
-				<p>LOADING STATE: {{ loading }}</p>
+		<template #default="{ item }">
+			<NcDashboardWidgetItem
+				:key="item.id" 
+				:title="item.title"
+				:subtitle="item.subtitle"
+				:link="item.link"
+				:icon="item.iconUrl ? item.iconUrl : item.iconClass" 
+				:datetime="item.date ? new Date(item.date) : null"
+			/>
+		</template>
+
+		<template #empty>
+			<div class="empty-content">
+				<NcEmptyContent
+					:title="t('approval', 'No pending approvals')"
+					:description="t('approval', 'You have no files awaiting your approval at the moment.')">
+					<template #icon>
+						<NcIconSvgWrapper :icon="iconApproval" :size="64" />
+					</template>
+				</NcEmptyContent>
 			</div>
 		</template>
 	</NcDashboardWidget>
 </template>
 
 <script>
-import { NcDashboardWidget } from '@nextcloud/vue'
+import { NcButton, NcDashboardWidget, NcDashboardWidgetItem, NcEmptyContent, NcIconSvgWrapper } from '@nextcloud/vue'
 import { generateUrl } from '@nextcloud/router'
-import { showError } from '@nextcloud/dialogs'
-import axios from '@nextcloud/axios'
 
-// import ApprovalIcon from '../components/icons/GroupIcon.vue' // Icon import commented out for testing
+import IconApproval from '../components/icons/IconApproval.vue'
 
 export default {
 	name: 'DashboardPending',
 	components: {
+		NcButton,
 		NcDashboardWidget,
+		NcDashboardWidgetItem,
+		NcEmptyContent,
+		NcIconSvgWrapper,
+		IconApproval,
 	},
 	props: {
 		title: {
 			type: String,
 			required: true,
 		},
+		items: {
+			type: Array,
+			default: () => [],
+		},
+		loading: {
+			type: Boolean,
+			default: false,
+		},
 	},
 	data() {
 		return {
-			// title: 'TEST TITLE - Pending Approvals', // Title now comes from props
-			// icon: ApprovalIcon, // Icon prop commented out for testing
-			pendingFiles: [],
-			loading: false, // Initialize as false
+			iconApproval: IconApproval,
 		}
 	},
-	// Temporarily comment out the entire mounted hook - NOW UNCOMMENTED
-	async mounted() {
-		try {
-			// eslint-disable-next-line no-console
-			console.log('[Approval App Dashboard] Fetching pending files...')
-			const response = await axios.get(generateUrl('/ocs/v2.php/apps/approval/api/v1/pendings'))
-
-			// eslint-disable-next-line no-console
-			console.log('[Approval App Dashboard] Raw API Response object:', response)
-
-			// eslint-disable-next-line no-console
-			console.log('[Approval App Dashboard] response.data:', response.data)
-			// eslint-disable-next-line no-console
-			console.log('[Approval App Dashboard] response.data (stringified):', JSON.stringify(response.data))
-
-			if (response.data && response.data.ocs && response.data.ocs.data) {
-				// eslint-disable-next-line no-console
-				console.log('[Approval App Dashboard] response.data.ocs:', response.data.ocs)
-				// eslint-disable-next-line no-console
-				console.log('[Approval App Dashboard] response.data.ocs (stringified):', JSON.stringify(response.data.ocs))
-
-				const pendingData = response.data.ocs.data
-				// eslint-disable-next-line no-console
-				console.log('[Approval App Dashboard] Extracted pendingData (response.data.ocs.data):', pendingData)
-				// eslint-disable-next-line no-console
-				console.log('[Approval App Dashboard] Extracted pendingData (stringified):', JSON.stringify(pendingData))
-
-				this.pendingFiles = pendingData
-				// eslint-disable-next-line no-console
-				console.log('[Approval App Dashboard] this.pendingFiles after assignment:', this.pendingFiles)
-			} else {
-				// eslint-disable-next-line no-console
-				console.warn('[Approval App Dashboard] API response structure is not as expected:', response.data)
-				this.pendingFiles = []
-				showError(t('approval', 'Could not fetch pending approvals: Invalid API response'))
-			}
-		} catch (error) {
-			// eslint-disable-next-line no-console
-			console.error('[Approval App Dashboard] Error fetching pending files:', error)
-			showError(t('approval', 'Could not fetch pending approvals'))
-		} finally {
-			this.loading = false
-			// eslint-disable-next-line no-console
-			console.log('[Approval App Dashboard] Loading set to false. Current pendingFiles length:', this.pendingFiles.length)
-		}
+	computed: {
+		openApprovalCenterUrl() {
+			return generateUrl('/apps/approval/approval-center')
+		},
 	},
 	methods: {
 		openApprovalCenter() {
-			window.location.href = generateUrl('/apps/approval/approval-center')
+			window.location.href = this.openApprovalCenterUrl
 		},
 	},
 }
