@@ -8,10 +8,12 @@
 			<p>TEST ACTION SLOT</p>
 		</template>
 
-		<div>
-			<p>TEST MAIN SLOT - PENDING COUNT: {{ pendingFiles.length }}</p>
-			<p>LOADING STATE: {{ loading }}</p>
-		</div>
+		<template #default>
+			<div>
+				<p>TEST MAIN SLOT - PENDING COUNT: {{ pendingFiles.length }}</p>
+				<p>LOADING STATE: {{ loading }}</p>
+			</div>
+		</template>
 
 	</NcDashboardWidget>
 </template>
@@ -34,9 +36,10 @@ export default {
 			title: 'TEST TITLE - Pending Approvals', // Static title, t() function removed for testing
 			// icon: ApprovalIcon, // Icon prop commented out for testing
 			pendingFiles: [],
-			loading: true,
+			loading: false, // Initialize as false
 		}
 	},
+	/* // Temporarily comment out the entire mounted hook
 	async mounted() {
 		try {
 			// eslint-disable-next-line no-console
@@ -81,6 +84,7 @@ export default {
 			console.log('[Approval App Dashboard] Loading set to false. Current pendingFiles length:', this.pendingFiles ? this.pendingFiles.length : 'undefined')
 		}
 	},
+	*/
 	methods: {
 		openApprovalCenter() {
 			window.location.href = generateUrl('/apps/approval/approval-center')
