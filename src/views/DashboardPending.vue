@@ -3,7 +3,7 @@
   - SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <template>
-	<NcDashboardWidget :icon="icon" :title="title" :loading="loading">
+	<NcDashboardWidget :title="title">
 		<template #actions>
 			<p>TEST ACTION SLOT</p>
 		</template>
@@ -22,7 +22,7 @@ import { generateUrl } from '@nextcloud/router'
 import { showError } from '@nextcloud/dialogs'
 import axios from '@nextcloud/axios'
 
-import ApprovalIcon from '../components/icons/GroupIcon.vue' // Assuming this is the desired app icon
+// import ApprovalIcon from '../components/icons/GroupIcon.vue' // Icon import commented out for testing
 
 export default {
 	name: 'DashboardPending',
@@ -31,8 +31,8 @@ export default {
 	},
 	data() {
 		return {
-			title: t('approval', 'Pending Approvals'),
-			icon: ApprovalIcon,
+			title: 'TEST TITLE - Pending Approvals', // Static title, t() function removed for testing
+			// icon: ApprovalIcon, // Icon prop commented out for testing
 			pendingFiles: [],
 			loading: true,
 		}
@@ -74,7 +74,7 @@ export default {
 		} catch (e) {
 			// eslint-disable-next-line no-console
 			console.error('[Approval App Dashboard] Error loading pending files:', e)
-			showError(t('approval', 'Could not load pending files'))
+			showError(t('approval', 'Could not load pending files')) // t() is still used here, but this is only on error
 		} finally {
 			this.loading = false
 			// eslint-disable-next-line no-console
