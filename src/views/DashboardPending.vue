@@ -46,7 +46,7 @@ import { NcButton, NcDashboardWidget, NcDashboardWidgetItem, NcEmptyContent, NcI
 import { generateUrl, imagePath } from '@nextcloud/router'
 import axios from '@nextcloud/axios'
 import { showError } from '@nextcloud/dialogs'
-import { formatRelativeDate } from '@nextcloud/vue-components'
+import { formatRelativeDate } from '@nextcloud/vue'
 
 import IconApprovalComponent from '../components/icons/GroupIcon.vue'
 
