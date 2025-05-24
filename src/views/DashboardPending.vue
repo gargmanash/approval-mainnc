@@ -58,7 +58,7 @@ export default {
 	methods: {
 		t(
 			app,
-			text
+			text,
 		) {
 			return t(app, text)
 		},
@@ -67,22 +67,25 @@ export default {
 			const url = generateOcsUrl('apps/approval/api/v1/pendings')
 			try {
 				const response = await axios.get(url)
+				// eslint-disable-next-line no-console
+				console.log('API Response:', response.data)
 				this.items = response.data.ocs.data.map((pendingItem) => {
-					// The API response shows activity: { time: '2024-07-24T12:00:00Z' } for example.
-					// The formatter expects a Unix timestamp in milliseconds or a Date object.
-					const timestamp = pendingItem.activity && pendingItem.activity.time
-						? new Date(pendingItem.activity.time).getTime()
+					const apiTimestampInSeconds = pendingItem.activity && pendingItem.activity.timestamp
+					const timestamp = apiTimestampInSeconds
+						? apiTimestampInSeconds * 1000
 						: Date.now()
 
 					return {
 						id: pendingItem.file_id,
 						fileName: pendingItem.file_name,
 						mimetype: pendingItem.mimetype,
-						url: '#', // TODO: Construct actual URL to the file/approval
+						url: '#', // TODO: Construct actual URL
 						formattedDate: this.relativeDateFormatter(timestamp),
 						iconUrl: OC.MimeType.getIconUrl(pendingItem.mimetype),
 					}
 				})
+				// eslint-disable-next-line no-console
+				console.log('Mapped items:', this.items)
 			} catch (error) {
 				console.error('Error fetching pending approvals:', error)
 			} finally {
