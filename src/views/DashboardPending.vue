@@ -3,21 +3,31 @@
   - SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <template>
-	<NcDashboardWidget title="Super Simple Test" :items="items" :loading="loading">
+	<NcDashboardWidget
+		:title="title"
+		:items="items"
+		:loading="loading"
+		:empty-content-message="t('approval', 'No pending approvals')"
+		empty-content-icon="icon-checkmark">
 		<template #default="{ item }">
 			<NcDashboardWidgetItem
-				:main-text="item.name"
-				sub-text="This is a static sub-text" />
+				:target-url="item.url"
+				:main-text="item.fileName"
+				:sub-text="item.formattedDate">
+				<template #avatar>
+					<img :src="item.iconUrl" :alt="item.mimetype" class="avatar-icon">
+				</template>
+			</NcDashboardWidgetItem>
 		</template>
-		<!-- Actions slot can be re-added later if default content works -->
-		<!-- Empty slot removed for this minimal test -->
+		<!-- TODO: Add actions, like a 'View all' button -->
 	</NcDashboardWidget>
 </template>
 
 <script>
-/* eslint-disable no-console */
-// Importing NcDashboardWidgetItem as well
-import { NcDashboardWidget, NcDashboardWidgetItem } from '@nextcloud/vue'
+import axios from '@nextcloud/axios'
+import { generateOcsUrl } from '@nextcloud/router'
+import { NcDashboardWidget, NcDashboardWidgetItem, useFormatDateTime } from '@nextcloud/vue'
+import { translate as t } from '@nextcloud/l10n'
 
 export default {
 	name: 'DashboardPending',
@@ -26,27 +36,71 @@ export default {
 		NcDashboardWidgetItem,
 	},
 	props: {
-		// title prop is passed by dashboardPending.js, let's keep it defined
-		// though NcDashboardWidget above uses a hardcoded title for this test.
 		title: {
 			type: String,
-			default: 'Pending Approvals (fallback title)',
+			default: t('approval', 'Pending approvals'),
 		},
+	},
+	setup() {
+		const formatter = useFormatDateTime()
+		const relativeDateFormatter = formatter.formatRelativeDateTime || formatter.formatDate || formatter.formatDateTime
+		return { relativeDateFormatter }
 	},
 	data() {
 		return {
-			loading: false,
-			items: [
-				{ id: 1, name: 'Static Test Item 1' },
-				{ id: 2, name: 'Static Test Item 2' },
-			],
+			loading: true,
+			items: [],
 		}
 	},
-	// No methods, no lifecycle hooks for this minimal test
+	mounted() {
+		this.fetchPendingApprovals()
+	},
+	methods: {
+		t(
+			app,
+			text
+		) {
+			return t(app, text)
+		},
+		async fetchPendingApprovals() {
+			this.loading = true
+			const url = generateOcsUrl('apps/approval/api/v1/pendings')
+			try {
+				const response = await axios.get(url)
+				this.items = response.data.ocs.data.map((pendingItem) => {
+					// The API response shows activity: { time: '2024-07-24T12:00:00Z' } for example.
+					// The formatter expects a Unix timestamp in milliseconds or a Date object.
+					const timestamp = pendingItem.activity && pendingItem.activity.time
+						? new Date(pendingItem.activity.time).getTime()
+						: Date.now()
+
+					return {
+						id: pendingItem.file_id,
+						fileName: pendingItem.file_name,
+						mimetype: pendingItem.mimetype,
+						url: '#', // TODO: Construct actual URL to the file/approval
+						formattedDate: this.relativeDateFormatter(timestamp),
+						iconUrl: OC.MimeType.getIconUrl(pendingItem.mimetype),
+					}
+				})
+			} catch (error) {
+				console.error('Error fetching pending approvals:', error)
+			} finally {
+				this.loading = false
+			}
+		},
+	},
 }
 </script>
 
 <style scoped lang="scss">
+.avatar-icon {
+	width: var(--default-clickable-area, 44px); // Use Nextcloud CSS variable if available
+	height: var(--default-clickable-area, 44px);
+	border-radius: var(--border-radius-rounded, 50%); // Use Nextcloud CSS variable
+	object-fit: cover;
+}
+
 /* Styles can be kept or removed, likely not affecting this test */
 .empty-content {
 	display: flex;
