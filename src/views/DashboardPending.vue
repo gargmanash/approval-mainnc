@@ -3,28 +3,30 @@
   - SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <template>
-	<NcDashboardWidget
-		:title="widgetTitle"
-		:items="items"
-		:loading="loading"
-		:empty-content-message="t('approval', 'No pending approvals')"
-		empty-content-icon="icon-checkmark">
-		<template #actions>
-			<NcButton :href="generateUrl('/apps/approval')" v-if="items.length > 0">
+	<div>
+		<NcDashboardWidget
+			:title="widgetTitle"
+			:items="items"
+			:loading="loading"
+			:empty-content-message="t('approval', 'No pending approvals')"
+			empty-content-icon="icon-checkmark">
+			<template #default="{ item }">
+				<NcDashboardWidgetItem
+					:target-url="item.url"
+					:main-text="item.fileName"
+					:sub-text="item.formattedDate">
+					<template #avatar>
+						<img :src="item.iconUrl" :alt="item.mimetype" class="avatar-icon">
+					</template>
+				</NcDashboardWidgetItem>
+			</template>
+		</NcDashboardWidget>
+		<div v-if="items.length > 0 && !loading" class="dashboard-actions-footer">
+			<NcButton :href="generateUrl('/apps/approval')">
 				{{ t('approval', 'View all') }}
 			</NcButton>
-		</template>
-		<template #default="{ item }">
-			<NcDashboardWidgetItem
-				:target-url="item.url"
-				:main-text="item.fileName"
-				:sub-text="item.formattedDate">
-				<template #avatar>
-					<img :src="item.iconUrl" :alt="item.mimetype" class="avatar-icon">
-				</template>
-			</NcDashboardWidgetItem>
-		</template>
-	</NcDashboardWidget>
+		</div>
+	</div>
 </template>
 
 <script>
@@ -53,9 +55,6 @@ export default {
 			items: [],
 		}
 	},
-	created() {
-		this.fetchPendingApprovals()
-	},
 	computed: {
 		widgetTitle() {
 			if (this.items.length > 0) {
@@ -66,6 +65,9 @@ export default {
 		generateUrl() {
 			return generateUrl
 		}
+	},
+	created() {
+		this.fetchPendingApprovals()
 	},
 	methods: {
 		t(
@@ -87,12 +89,12 @@ export default {
 				console.log('API Response:', response.data)
 				this.items = response.data.ocs.data.map((pendingItem) => {
 					const apiTimestampInSeconds = pendingItem.activity && pendingItem.activity.timestamp
-
+					const itemUrl = generateUrl('/f/' + pendingItem.file_id)
 					return {
 						id: pendingItem.file_id,
 						fileName: pendingItem.file_name,
 						mimetype: pendingItem.mimetype,
-						url: generateUrl('/f/' + pendingItem.file_id),
+						url: itemUrl,
 						formattedDate: this.getFormattedDate(apiTimestampInSeconds),
 						iconUrl: OC.MimeType.getIconUrl(pendingItem.mimetype),
 					}
@@ -115,6 +117,12 @@ export default {
 	height: var(--default-clickable-area, 44px);
 	border-radius: var(--border-radius-rounded, 50%); // Use Nextcloud CSS variable
 	object-fit: cover;
+}
+
+.dashboard-actions-footer {
+	display: flex;
+	justify-content: center;
+	padding-top: 16px; // Add some spacing
 }
 
 /* Styles can be kept or removed, likely not affecting this test */
