@@ -34,4 +34,4 @@ if (document.readyState === 'loading') {
 	document.addEventListener('DOMContentLoaded', initApprovalCenter)
 } else {
 	initApprovalCenter()
-} 
+}

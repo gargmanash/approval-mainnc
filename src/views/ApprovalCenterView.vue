@@ -3,8 +3,8 @@
 		<NcAppContent app-name="approval">
 			<template #app-navigation>
 				<NcAppNavigation :title="t('approval', 'Approval Center')">
-					<NcAppNavigationItem :title="t('approval', 'Approval File Tree')" @click="currentSection = 'tree'" :active="currentSection === 'tree'" />
-					<NcAppNavigationItem :title="t('approval', 'Workflow KPIs')" @click="currentSection = 'kpis'" :active="currentSection === 'kpis'" />
+					<NcAppNavigationItem :title="t('approval', 'Approval File Tree')" :active="currentSection === 'tree'" @click="currentSection = 'tree'" />
+					<NcAppNavigationItem :title="t('approval', 'Workflow KPIs')" :active="currentSection === 'kpis'" @click="currentSection = 'kpis'" />
 				</NcAppNavigation>
 			</template>
 
@@ -25,7 +25,9 @@
 						@approve-file="handleApproveFile"
 						@reject-file="handleRejectFile"
 						@view-file="handleViewFile" />
-					<p v-else>{{ t('approval', 'No files found in the approval system.') }}</p>
+					<p v-else>
+						{{ t('approval', 'No files found in the approval system.') }}
+					</p>
 				</div>
 
 				<div v-if="!loading && currentSection === 'kpis'">
@@ -48,7 +50,9 @@
 							</tr>
 						</tbody>
 					</table>
-					<p v-else>{{ t('approval', 'No workflow KPI data available.') }}</p>
+					<p v-else>
+						{{ t('approval', 'No workflow KPI data available.') }}
+					</p>
 				</div>
 			</div>
 		</NcAppContent>
@@ -61,7 +65,7 @@ import { generateUrl } from '@nextcloud/router'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import axios from '@nextcloud/axios'
 import ApprovalFileTree from '../components/ApprovalFileTree.vue'
-import { approve, reject } from '../files/helpers'
+import { approve, reject } from '../files/helpers.js'
 
 const STATUS_PENDING = 1
 const STATUS_APPROVED = 2
@@ -239,4 +243,4 @@ export default {
 		background-color: var(--color-background-hover);
 	}
 }
-</style> 
+</style>

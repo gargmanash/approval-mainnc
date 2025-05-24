@@ -5,13 +5,13 @@
 <template>
 	<NcDashboardWidget :icon="icon" :title="title" :loading="loading">
 		<template #actions>
-			<NcButtonPrimary @click="openApprovalCenter">
+			<NcButton type="primary" @click="openApprovalCenter">
 				{{ t('approval', 'Open Approval Center') }}
-			</NcButtonPrimary>
+			</NcButton>
 		</template>
 		<div v-if="pendingFiles.length === 0 && !loading" class="empty-content">
 			<div class="empty-content-icon">
-				<NcIconSvg :src="iconEmpty" :size="128" />
+				<CheckIcon :size="128" />
 			</div>
 			<div class="empty-content-text">
 				{{ t('approval', 'No files pending your approval') }}
@@ -31,26 +31,25 @@
 </template>
 
 <script>
-import { NcDashboardWidget, NcButtonPrimary, NcIconSvg } from '@nextcloud/vue'
+import { NcDashboardWidget, NcButton } from '@nextcloud/vue'
 import { generateUrl } from '@nextcloud/router'
 import { showError } from '@nextcloud/dialogs'
 import axios from '@nextcloud/axios'
 
 import ApprovalIcon from '../components/icons/GroupIcon.vue' // Assuming this is the desired app icon
-import CheckmarkIcon from '@nextcloud/vue-material-icons/dist/icons/Checkmark.vue'
+import CheckIcon from 'vue-material-design-icons/Check.vue'
 
 export default {
 	name: 'DashboardPending',
 	components: {
 		NcDashboardWidget,
-		NcButtonPrimary,
-		NcIconSvg,
+		NcButton,
+		CheckIcon,
 	},
 	data() {
 		return {
 			title: t('approval', 'Pending Approvals'),
 			icon: ApprovalIcon,
-			iconEmpty: CheckmarkIcon,
 			pendingFiles: [],
 			loading: true,
 		}

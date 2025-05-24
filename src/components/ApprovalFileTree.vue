@@ -2,10 +2,10 @@
 	<div class="approval-file-tree">
 		<ul class="tree-level">
 			<li v-for="item in treeData" :key="item.path" :class="{'is-folder': item.type === 'folder'}">
-				<div @click="toggleFolder(item)" class="tree-item-label">
-					<NcIconSvg v-if="item.type === 'folder' && item.expanded" :src="iconFolderOpen" :size="20" />
-					<NcIconSvg v-else-if="item.type === 'folder' && !item.expanded" :src="iconFolder" :size="20" />
-					<NcIconSvg v-else :src="getMimeIcon(item.originalFile.mimetype)" :size="20" />
+				<div class="tree-item-label" @click="toggleFolder(item)">
+					<FolderOpenIcon v-if="item.type === 'folder' && item.expanded" :size="20" />
+					<FolderIcon v-else-if="item.type === 'folder' && !item.expanded" :size="20" />
+					<NcIconSvgWrapper v-else :icon="getMimeIcon(item.originalFile.mimetype)" :size="20" />
 					<span class="item-name">{{ item.name }}</span>
 					<span v-if="item.type === 'folder' && item.kpis" class="folder-kpis">
 						(P: {{ item.kpis.pending }}, A: {{ item.kpis.approved }}, R: {{ item.kpis.rejected }})
@@ -18,21 +18,21 @@
 					<NcButton @click.stop="approveFile(item.originalFile)">
 						{{ t('approval', 'Approve') }}
 					</NcButton>
-					<NcButton @click.stop="rejectFile(item.originalFile)" type="secondary">
+					<NcButton type="secondary" @click.stop="rejectFile(item.originalFile)">
 						{{ t('approval', 'Reject') }}
 					</NcButton>
-					<NcButton @click.stop="viewFile(item.originalFile)" type="tertiary" class="icon-only">
+					<NcButton type="tertiary" class="icon-only" @click.stop="viewFile(item.originalFile)">
 						<template #icon>
-							<NcIconSvg :src="iconOpenInNew" :size="20" />
+							<OpenInNewIcon :size="20" />
 						</template>
 					</NcButton>
 				</div>
 				<div v-else-if="item.type === 'file'" class="file-status-indicator">
 					<span v-if="item.originalFile.status_code === STATUS_APPROVED" class="status-approved">{{ t('approval', 'Approved') }}</span>
 					<span v-else-if="item.originalFile.status_code === STATUS_REJECTED" class="status-rejected">{{ t('approval', 'Rejected') }}</span>
-					<NcButton @click.stop="viewFile(item.originalFile)" type="tertiary" class="icon-only">
+					<NcButton type="tertiary" class="icon-only" @click.stop="viewFile(item.originalFile)">
 						<template #icon>
-							<NcIconSvg :src="iconOpenInNew" :size="20" />
+							<OpenInNewIcon :size="20" />
 						</template>
 					</NcButton>
 				</div>
@@ -50,10 +50,10 @@
 </template>
 
 <script>
-import { NcButton, NcIconSvg } from '@nextcloud/vue'
-import FolderIcon from '@nextcloud/vue-material-icons/dist/icons/Folder.vue'
-import FolderOpenIcon from '@nextcloud/vue-material-icons/dist/icons/FolderOpen.vue'
-import OpenInNewIcon from '@nextcloud/vue-material-icons/dist/icons/OpenInNew.vue'
+import { NcButton, NcIconSvgWrapper } from '@nextcloud/vue'
+import FolderIcon from 'vue-material-design-icons/Folder.vue'
+import FolderOpenIcon from 'vue-material-design-icons/FolderOpen.vue'
+import OpenInNewIcon from 'vue-material-design-icons/OpenInNew.vue'
 
 const STATUS_PENDING = 1
 const STATUS_APPROVED = 2
@@ -63,7 +63,10 @@ export default {
 	name: 'ApprovalFileTree',
 	components: {
 		NcButton,
-		NcIconSvg,
+		NcIconSvgWrapper,
+		FolderIcon,
+		FolderOpenIcon,
+		OpenInNewIcon,
 	},
 	props: {
 		treeData: {
@@ -78,9 +81,6 @@ export default {
 	emits: ['approve-file', 'reject-file', 'view-file'],
 	data() {
 		return {
-			iconFolder: FolderIcon,
-			iconFolderOpen: FolderOpenIcon,
-			iconOpenInNew: OpenInNewIcon,
 			STATUS_PENDING, // Expose to template
 			STATUS_APPROVED,
 			STATUS_REJECTED,
@@ -151,7 +151,7 @@ export default {
 		.file-status-indicator {
 			display: flex;
 			align-items: center;
-			margin-left: 28px; 
+			margin-left: 28px;
 			margin-top: 4px;
 
 			.nc-button {
@@ -168,4 +168,4 @@ export default {
 		}
 	}
 }
-</style> 
+</style>
