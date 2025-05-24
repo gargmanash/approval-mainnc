@@ -5,28 +5,14 @@
 <template>
 	<NcDashboardWidget :icon="icon" :title="title" :loading="loading">
 		<template #actions>
-			<NcButton type="primary" @click="openApprovalCenter">
-				{{ t('approval', 'Open Approval Center') }}
-			</NcButton>
+			<p>TEST ACTION SLOT</p>
 		</template>
-		<div v-if="pendingFiles.length === 0 && !loading" class="empty-content">
-			<div class="empty-content-icon">
-				<CheckIcon :size="128" />
-			</div>
-			<div class="empty-content-text">
-				{{ t('approval', 'No files pending your approval') }}
-			</div>
+
+		<div>
+			<p>TEST MAIN SLOT - PENDING COUNT: {{ pendingFiles.length }}</p>
+			<p>LOADING STATE: {{ loading }}</p>
 		</div>
-		<div v-else-if="!loading">
-			<p>{{ t('approval', 'You have {count} file(s) pending your approval.', { count: pendingFiles.length }) }}</p>
-			<p>{{ t('approval', 'Go to the Approval Center for a detailed view and KPIs.') }}</p>
-			<!-- Optional: Display a few top pending files here as a quick preview -->
-			<!-- <ul class="pending-files-summary">
-				<li v-for="file in pendingFiles.slice(0, 3)" :key="file.id">
-					{{ file.name }} ({{ file.path }})
-				</li>
-			</ul> -->
-		</div>
+
 	</NcDashboardWidget>
 </template>
 
