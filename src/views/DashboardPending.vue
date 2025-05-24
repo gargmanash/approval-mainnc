@@ -4,7 +4,6 @@
 -->
 <template>
 	<NcDashboardWidget :title="title" :loading="loading">
-		<IconApproval v-if="false" />
 		<template #actions>
 			<!-- Actions slot can be used for buttons like 'View all' or refresh -->
 			<NcButton
@@ -42,13 +41,10 @@
 </template>
 
 <script>
-import { NcButton, NcDashboardWidget, NcDashboardWidgetItem, NcEmptyContent, NcIconSvgWrapper } from '@nextcloud/vue'
+import { NcButton, NcDashboardWidget, NcDashboardWidgetItem, NcEmptyContent, NcIconSvgWrapper, useFormatDateTime } from '@nextcloud/vue'
 import { generateUrl, imagePath } from '@nextcloud/router'
 import axios from '@nextcloud/axios'
 import { showError } from '@nextcloud/dialogs'
-import { formatRelativeDate } from '@nextcloud/vue'
-
-import IconApprovalComponent from '../components/icons/GroupIcon.vue'
 
 export default {
 	name: 'DashboardPending',
@@ -58,7 +54,6 @@ export default {
 		NcDashboardWidgetItem,
 		NcEmptyContent,
 		NcIconSvgWrapper,
-		IconApproval: IconApprovalComponent,
 	},
 	props: {
 		title: {
@@ -68,15 +63,19 @@ export default {
 	},
 	data() {
 		return {
-			iconApprovalComponent: IconApprovalComponent,
 			items: [],
 			loading: true,
+			dateTimeFormatter: null, // To store the formatter instance
 		}
 	},
 	computed: {
 		openApprovalCenterUrl() {
 			return generateUrl('/apps/approval/approval-center')
 		},
+	},
+	created() {
+		const formatter = useFormatDateTime()
+		this.dateTimeFormatter = formatter.formatRelativeDateTime || formatter.formatDate
 	},
 	async mounted() {
 		await this.fetchPendingApprovals()
@@ -91,11 +90,10 @@ export default {
 						const activity = pendingItem.activity || {}
 						const requesterName = activity.userName || this.t('approval', 'Unknown user')
 						const timestamp = activity.timestamp || Math.floor(Date.now() / 1000)
-						
 						// Construct subtitle
 						let subtitle = this.t('approval', 'Requested by {user}', { user: requesterName })
 						if (activity.timestamp) {
-							subtitle += ` - ${formatRelativeDate(activity.timestamp * 1000)}`
+							subtitle += ` - ${this.dateTimeFormatter(activity.timestamp * 1000)}`
 						}
 
 						// Construct icon URL (similar to PHP widget logic)
