@@ -19,12 +19,12 @@
 		<template #default>
 			<NcDashboardWidgetItem
 				v-for="item in items"
-				:key="item.id"
-				:title="item.title"
+				:key="item.file_id"
+				:title="item.file_name"
 				:subtitle="item.subtitle"
 				:link="item.link"
-				:icon="item.iconUrl ? item.iconUrl : item.iconClass"
-				:datetime="item.date ? new Date(item.date) : null" />
+				:icon="item.iconUrl"
+				:datetime="item.datetime ? new Date(item.datetime) : null" />
 		</template>
 
 		<template #empty>
@@ -43,9 +43,10 @@
 
 <script>
 import { NcButton, NcDashboardWidget, NcDashboardWidgetItem, NcEmptyContent, NcIconSvgWrapper } from '@nextcloud/vue'
-import { generateUrl } from '@nextcloud/router'
+import { generateUrl, imagePath } from '@nextcloud/router'
 import axios from '@nextcloud/axios'
 import { showError } from '@nextcloud/dialogs'
+import { formatRelativeDate } from '@nextcloud/vue-components/dist/utils/formatRelativeDate.js'
 
 import IconApprovalComponent from '../components/icons/GroupIcon.vue'
 
@@ -64,14 +65,6 @@ export default {
 			type: String,
 			required: true,
 		},
-		widgetId: {
-			type: String,
-			required: true,
-		},
-		itemApiVersion: {
-			type: [String, Number],
-			required: true,
-		},
 	},
 	data() {
 		return {
@@ -86,24 +79,54 @@ export default {
 		},
 	},
 	async mounted() {
-		await this.fetchItems()
+		await this.fetchPendingApprovals()
 	},
 	methods: {
-		async fetchItems() {
+		async fetchPendingApprovals() {
 			this.loading = true
 			try {
-				const url = generateUrl(
-					`/ocs/v2.php/apps/dashboard/api/v1/widget-items/${this.widgetId}?format=json&item_api_version=${this.itemApiVersion}`,
-				)
-				const response = await axios.get(url)
-				if (response.data && response.data.ocs && response.data.ocs.data) {
-					this.items = response.data.ocs.data
+				const response = await axios.get(generateUrl('/ocs/v2.php/apps/approval/api/v1/pendings'))
+				if (response.data && response.data.ocs && Array.isArray(response.data.ocs.data)) {
+					this.items = response.data.ocs.data.map(pendingItem => {
+						const activity = pendingItem.activity || {}
+						const requesterName = activity.userName || this.t('approval', 'Unknown user')
+						const timestamp = activity.timestamp || Math.floor(Date.now() / 1000)
+						
+						// Construct subtitle
+						let subtitle = this.t('approval', 'Requested by {user}', { user: requesterName })
+						if (activity.timestamp) {
+							subtitle += ` - ${formatRelativeDate(activity.timestamp * 1000)}`
+						}
+
+						// Construct icon URL (similar to PHP widget logic)
+						let iconUrl = imagePath('core', `filetypes/${pendingItem.mimetype.split('/')[0]}.svg`)
+						// Basic check if icon path seems invalid or too generic, then fallback
+						// This check might need refinement based on actual imagePath behavior for non-existent icons.
+						try {
+							// A more robust check would be to see if the image actually loads, but that's complex here.
+							// For now, assume if it contains '/.' it might be a bad path from strtok if mimetype was empty.
+							if (iconUrl.includes('/.') || !pendingItem.mimetype) {
+								iconUrl = imagePath('approval', 'app.svg')
+							}
+						} catch (e) { // In case imagePath throws for some reason with bad inputs
+							iconUrl = imagePath('approval', 'app.svg')
+						}
+
+						return {
+							file_id: pendingItem.file_id,
+							file_name: pendingItem.file_name,
+							subtitle: subtitle,
+							link: generateUrl(`/apps/approval/approval-center?file_id=${pendingItem.file_id}`), // Or direct file link if possible
+							iconUrl: iconUrl,
+							datetime: timestamp * 1000, // NcDashboardWidgetItem expects ms
+						}
+					})
 				} else {
 					this.items = []
-					showError(this.t('approval', 'Could not fetch pending approvals: Invalid API response'))
+					showError(this.t('approval', 'Could not fetch pending approvals: Invalid API response structure'))
 				}
 			} catch (e) {
-				console.error(e)
+				console.error('Error fetching pending approvals:', e)
 				showError(this.t('approval', 'Could not fetch pending approvals'))
 				this.items = []
 			} finally {
