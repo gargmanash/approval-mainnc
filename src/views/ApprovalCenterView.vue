@@ -10,6 +10,7 @@
 
 			<div class="app-content-container">
 				<h1>{{ t('approval', 'Approval Center & KPIs') }}</h1>
+				<p><i>Static content test: If you see this, the ApprovalCenterView component is rendering.</i></p>
 
 				<div v-if="loading">
 					<NcLoadingIcon />
@@ -161,10 +162,13 @@ export default {
 	methods: {
 		async reloadData() {
 			this.loading = true
-			await this.fetchAllApprovalFiles()
-			await this.fetchWorkflows()
-			await this.fetchWorkflowKpis()
-			this.loading = false
+			try {
+				await this.fetchAllApprovalFiles()
+				await this.fetchWorkflows()
+				await this.fetchWorkflowKpis()
+			} finally {
+				this.loading = false
+			}
 		},
 		async fetchAllApprovalFiles() {
 			try {
