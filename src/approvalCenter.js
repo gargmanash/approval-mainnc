@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import Vue from 'vue'
-import ApprovalCenterView from './views/ApprovalCenterView.vue'
+// import Vue from 'vue'
+// import ApprovalCenterView from './views/ApprovalCenterView.vue'
 
 // Import other necessary Nextcloud Vue components or libraries if needed
 // e.g., import store from '@nextcloud/vuex'
