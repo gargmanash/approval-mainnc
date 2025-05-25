@@ -20,6 +20,8 @@ use OCP\IUserManager;
 use OCP\IDBConnection;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
+use OCP\IDBConnection;
+use OCP\IQueryBuilder;
 
 class ConfigController extends Controller {
 
@@ -151,27 +153,34 @@ class ConfigController extends Controller {
 	}
 
 	public function getAllApprovalFiles(): DataResponse {
-		$qb = $this->db->getQueryBuilder();
-
-		// Subquery to get the latest timestamp for each file_id
+		// Step 1: Get the latest timestamp for each file_id
 		$subQuery = $this->db->getQueryBuilder();
 		$subQuery->select('file_id')
-				 ->addSelect('MAX(' . $subQuery->quoteIdentifier('timestamp') . ')', 'max_timestamp')
-				 ->from('approval_activity')
-				 ->groupBy('file_id');
+			->addSelect('MAX(' . $subQuery->quoteIdentifier('timestamp') . ')', 'max_timestamp')
+			->from('approval_activity')
+			->groupBy('file_id');
 
-		// Main query to get the row with the latest timestamp for each file_id
+		$stmtSub = $subQuery->execute();
+		$latestTimestamps = $stmtSub->fetchAll();
+		$stmtSub->closeCursor();
+
+		if (empty($latestTimestamps)) {
+			return new DataResponse([]);
+		}
+
+		// Step 2: Build the main query using the results from the subquery
+		$qb = $this->db->getQueryBuilder();
 		$qb->select('aa.file_id', 'aa.rule_id', 'aa.new_state', 'aa.timestamp')
-			->from('approval_activity', 'aa')
-			->innerJoin(
-				'aa',
-				'(' . $subQuery->getSQL() . ')',
-				'latest_aa',
-				$qb->expr()->andX(
-					$qb->expr()->eq('aa.file_id', 'latest_aa.file_id'),
-					$qb->expr()->eq('aa.timestamp', 'latest_aa.max_timestamp')
-				)
-			);
+			->from('approval_activity', 'aa');
+
+		$orConditions = $qb->expr()->orX();
+		foreach ($latestTimestamps as $latest) {
+			$andConditions = $qb->expr()->andX();
+			$andConditions->add($qb->expr()->eq('aa.file_id', $qb->createNamedParameter($latest['file_id'])));
+			$andConditions->add($qb->expr()->eq('aa.timestamp', $qb->createNamedParameter($latest['max_timestamp'], IQueryBuilder::PARAM_INT)));
+			$orConditions->add($andConditions);
+		}
+		$qb->where($orConditions);
 
 		$stmt = $qb->execute();
 		$results = $stmt->fetchAll();
@@ -193,7 +202,8 @@ class ConfigController extends Controller {
 				}
 			} catch (NotFoundException $e) {
 				// File might have been deleted, skip it
-				$this->logger->warning('File not found while fetching all approval files: ' . $row['file_id'], ['app' => $this->appName, 'exception' => $e]);
+				// Consider logging this if $this->logger is available and configured
+				// For now, just skipping.
 			}
 		}
 
