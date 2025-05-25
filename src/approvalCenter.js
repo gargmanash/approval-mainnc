@@ -1,3 +1,5 @@
+console.log('APPROVALCENTER.JS SCRIPT LOADED AND PARSING');
+
 /**
  * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
  * SPDX-License-Identifier: AGPL-3.0-or-later
