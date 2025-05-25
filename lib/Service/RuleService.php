@@ -87,7 +87,6 @@ class RuleService {
 			return true;
 		}
 		$req->closeCursor();
-		$qb->resetQueryParts();
 
 		return false;
 	}
@@ -126,7 +125,6 @@ class RuleService {
 			$qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
 		);
 		$qb->executeStatement();
-		$qb = $qb->resetQueryParts();
 
 		$rule = $this->getRule($id);
 
@@ -174,6 +172,7 @@ class RuleService {
 				}
 			}
 			foreach ($toDelete as $td) {
+				$qb = $this->db->getQueryBuilder();
 				$qb->delete('approval_rule_' . $paramKey)
 					->where(
 						$qb->expr()->eq('rule_id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
@@ -185,9 +184,9 @@ class RuleService {
 						$qb->expr()->eq('entity_id', $qb->createNamedParameter($td['entityId'], IQueryBuilder::PARAM_STR))
 					);
 				$qb->executeStatement();
-				$qb = $qb->resetQueryParts();
 			}
 			foreach ($toAdd as $ta) {
+				$qb = $this->db->getQueryBuilder();
 				$qb->insert('approval_rule_' . $paramKey)
 					->values([
 						'entity_type' => $qb->createNamedParameter($this->strTypeToInt[$ta['type']], IQueryBuilder::PARAM_INT),
@@ -195,7 +194,6 @@ class RuleService {
 						'rule_id' => $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT),
 					]);
 				$qb->executeStatement();
-				$qb = $qb->resetQueryParts();
 			}
 		}
 
@@ -233,11 +231,11 @@ class RuleService {
 				'description' => $qb->createNamedParameter($description, IQueryBuilder::PARAM_STR),
 			]);
 		$qb->executeStatement();
-		$qb = $qb->resetQueryParts();
 
-		$insertedRuleId = $qb->getLastInsertId();
+		$insertedRuleId = $this->db->getLastInsertId();
 
 		foreach ($approvers as $elem) {
+			$qb = $this->db->getQueryBuilder();
 			$qb->insert('approval_rule_approvers')
 				->values([
 					'entity_id' => $qb->createNamedParameter($elem['entityId'], IQueryBuilder::PARAM_STR),
@@ -245,9 +243,9 @@ class RuleService {
 					'rule_id' => $qb->createNamedParameter($insertedRuleId, IQueryBuilder::PARAM_INT),
 				]);
 			$qb->executeStatement();
-			$qb = $qb->resetQueryParts();
 		}
 		foreach ($requesters as $elem) {
+			$qb = $this->db->getQueryBuilder();
 			$qb->insert('approval_rule_requesters')
 				->values([
 					'entity_id' => $qb->createNamedParameter($elem['entityId'], IQueryBuilder::PARAM_STR),
@@ -255,7 +253,6 @@ class RuleService {
 					'rule_id' => $qb->createNamedParameter($insertedRuleId, IQueryBuilder::PARAM_INT),
 				]);
 			$qb->executeStatement();
-			$qb = $qb->resetQueryParts();
 		}
 
 		return ['id' => $insertedRuleId];
@@ -280,28 +277,27 @@ class RuleService {
 				$qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
 			);
 		$qb->executeStatement();
-		$qb = $qb->resetQueryParts();
 
+		$qb = $this->db->getQueryBuilder();
 		$qb->delete('approval_rule_approvers')
 			->where(
 				$qb->expr()->eq('rule_id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
 			);
 		$qb->executeStatement();
-		$qb = $qb->resetQueryParts();
 
+		$qb = $this->db->getQueryBuilder();
 		$qb->delete('approval_rule_requesters')
 			->where(
 				$qb->expr()->eq('rule_id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
 			);
 		$qb->executeStatement();
-		$qb = $qb->resetQueryParts();
 
+		$qb = $this->db->getQueryBuilder();
 		$qb->delete('approval_activity')
 			->where(
 				$qb->expr()->eq('rule_id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
 			);
 		$qb->executeStatement();
-		$qb->resetQueryParts();
 
 		return [];
 	}
@@ -338,7 +334,6 @@ class RuleService {
 			break;
 		}
 		$req->closeCursor();
-		$qb->resetQueryParts();
 
 		if (is_null($rule)) {
 			return null;
@@ -380,7 +375,6 @@ class RuleService {
 				];
 			}
 			$req->closeCursor();
-			$qb->resetQueryParts();
 
 			foreach ($rules as $id => $rule) {
 				$rules[$id]['approvers'] = $this->getRuleEntities($id, 'approvers');
@@ -420,7 +414,6 @@ class RuleService {
 			}
 		}
 		$req->closeCursor();
-		$qb->resetQueryParts();
 		return $entities;
 	}
 
@@ -443,9 +436,9 @@ class RuleService {
 				$qb->expr()->eq('file_id', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT))
 			);
 		$qb->executeStatement();
-		$qb = $qb->resetQueryParts();
 
 		$timestamp = (new DateTime())->getTimestamp();
+		$qb = $this->db->getQueryBuilder();
 		$qb->insert('approval_activity')
 			->values([
 				'file_id' => $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT),
@@ -455,7 +448,6 @@ class RuleService {
 				'timestamp' => $qb->createNamedParameter($timestamp, IQueryBuilder::PARAM_INT),
 			]);
 		$qb->executeStatement();
-		$qb->resetQueryParts();
 	}
 
 	/**
@@ -491,7 +483,6 @@ class RuleService {
 			break;
 		}
 		$req->closeCursor();
-		$qb->resetQueryParts();
 
 		if (!is_null($activity)) {
 			// get user display name
