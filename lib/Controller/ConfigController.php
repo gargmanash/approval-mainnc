@@ -20,7 +20,6 @@ use OCP\IUserManager;
 use OCP\IDBConnection;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
-use OCP\IDBConnection;
 use OCP\IQueryBuilder;
 
 class ConfigController extends Controller {
