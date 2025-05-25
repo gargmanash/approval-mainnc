@@ -1,4 +1,5 @@
-console.log('APPROVALCENTER.JS SCRIPT LOADED AND PARSING');
+// eslint-disable-next-line no-console
+console.log('APPROVALCENTER.JS SCRIPT LOADED AND PARSING')
 
 /**
  * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
