@@ -113,10 +113,10 @@ class ConfigController extends Controller {
 		$kpis = [];
 
 		$qb = $this->db->getQueryBuilder();
-		$qb->select($qb->func('DISTINCT', 'file_id', true))
-			->addSelect('rule_id', 'new_state')
+		// Select file_id, rule_id, and new_state. The subsequent processing will count distinct files.
+		$qb->select(['file_id', 'rule_id', 'new_state'])
 			->from('approval_activity')
-			->groupBy(['rule_id', 'new_state', 'file_id']); // Group by file_id first to count distinct files
+			->groupBy(['file_id', 'rule_id', 'new_state']);
 
 		$stmt = $qb->execute();
 		$results = $stmt->fetchAll();
@@ -155,7 +155,8 @@ class ConfigController extends Controller {
 
 		// Subquery to get the latest timestamp for each file_id
 		$subQuery = $this->db->getQueryBuilder();
-		$subQuery->select('file_id', $subQuery->func('MAX', 'timestamp', true) . ' AS max_timestamp')
+		$subQuery->select('file_id')
+			->addSelect($subQuery->func('MAX', 'timestamp'), 'max_timestamp')
 			->from('approval_activity')
 			->groupBy('file_id');
 
