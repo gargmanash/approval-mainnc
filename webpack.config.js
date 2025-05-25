@@ -24,7 +24,7 @@ webpackConfig.entry = {
 	filesPlugin: { import: path.join(__dirname, 'src', 'files/filesPlugin.js'), filename: appId + '-filesPlugin.js' },
 	approvalTab: { import: path.join(__dirname, 'src', 'approvalTab.js'), filename: appId + '-approvalTab.js' },
 	init: { import: path.join(__dirname, 'src', 'files/init.js'), filename: appId + '-init.js' },
-	approvalcenter: path.join(__dirname, 'src', 'approvalCenter.js'),
+	approvalcenter: { import: path.join(__dirname, 'src', 'approvalCenter.js'), filename: appId + '-approvalcenter.js' },
 	approvalAnalytics: { import: path.join(__dirname, 'src', 'approvalAnalytics.js'), filename: appId + '-approvalAnalytics.js' },
 }
 
