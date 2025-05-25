@@ -155,7 +155,7 @@ class ConfigController extends Controller {
 		// Step 1: Get the latest timestamp for each file_id
 		$latestTimestampQb = $this->db->getQueryBuilder();
 		$latestTimestampQb->select('file_id')
-			->addSelect('MAX(' . $this->db->getDatabasePlatform()->quoteIdentifier('timestamp') . ')', 'max_timestamp')
+			->addSelect('MAX(' . $latestTimestampQb->quoteIdentifier('timestamp') . ') AS max_timestamp')
 			->from('approval_activity')
 			->groupBy('file_id');
 
