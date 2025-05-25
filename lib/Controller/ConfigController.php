@@ -152,36 +152,48 @@ class ConfigController extends Controller {
 	}
 
 	public function getAllApprovalFiles(): DataResponse {
-		$qb = $this->db->getQueryBuilder();
-
-		// Alias for the main table
-		$mainAlias = 'aa';
-		// Alias for the subquery
-		$subAlias = 'latest_aa';
-
-		// Step 1: Define the subquery to get the latest timestamp for each file_id
-		$subQuery = $this->db->getQueryBuilder();
-		$subQuery->select('file_id')
+		// Step 1: Get the latest timestamp for each file_id
+		$latestTimestampQb = $this->db->getQueryBuilder();
+		$latestTimestampQb->select('file_id')
 			->addSelect('MAX(' . $this->db->quoteIdentifier('timestamp') . ') AS max_timestamp')
 			->from('approval_activity')
 			->groupBy('file_id');
 
-		// Step 2: Build the main query
-		$qb->select($mainAlias . '.file_id', $mainAlias . '.rule_id', $mainAlias . '.new_state', $mainAlias . '.timestamp')
-			->from('approval_activity', $mainAlias)
-			->innerJoin(
-				$mainAlias,
-				'(' . $subQuery->getSQL() . ')', // The subquery SQL
-				$subAlias, // Alias for the subquery result
-				$qb->expr()->andX( // Join condition
-					$qb->expr()->eq($mainAlias . '.file_id', $subAlias . '.file_id'),
-					$qb->expr()->eq($mainAlias . '.timestamp', $subAlias . '.max_timestamp')
-				)
-			);
+		$stmtSub = $latestTimestampQb->execute();
+		$latestEntriesMap = []; // Key: file_id, Value: max_timestamp
+		while ($row = $stmtSub->fetchAssociative()) {
+			$latestEntriesMap[$row['file_id']] = $row['max_timestamp'];
+		}
+		$stmtSub->closeCursor();
 
-		$stmt = $qb->execute();
-		$results = $stmt->fetchAll();
-		$stmt->closeCursor();
+		if (empty($latestEntriesMap)) {
+			return new DataResponse([]);
+		}
+
+		// Step 2: Build the main query to fetch the full rows for these latest entries
+		$mainQb = $this->db->getQueryBuilder();
+		$mainQb->select('file_id', 'rule_id', 'new_state', 'timestamp')
+			->from('approval_activity', 'aa'); // Alias 'aa' for the table
+
+		$orConditions = $mainQb->expr()->orX(); // Initialize OR condition group
+		$paramIndex = 0;
+		foreach ($latestEntriesMap as $fileId => $maxTimestamp) {
+			$fileIdParamName = 'file_id_' . $paramIndex;
+			$timestampParamName = 'timestamp_' . $paramIndex;
+
+			// Assuming file_id and timestamp are integers. Adjust PARAM_INT if types differ.
+			$andConditions = $mainQb->expr()->andX(
+				$mainQb->expr()->eq('aa.file_id', $mainQb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT, ':' . $fileIdParamName)),
+				$mainQb->expr()->eq('aa.timestamp', $mainQb->createNamedParameter($maxTimestamp, IQueryBuilder::PARAM_INT, ':' . $timestampParamName))
+			);
+			$orConditions->add($andConditions);
+			$paramIndex++;
+		}
+		$mainQb->where($orConditions);
+
+		$stmtMain = $mainQb->execute();
+		$results = $stmtMain->fetchAllAssociative();
+		$stmtMain->closeCursor();
 
 		$allFilesData = [];
 		foreach ($results as $row) {
@@ -200,7 +212,6 @@ class ConfigController extends Controller {
 			} catch (NotFoundException $e) {
 				// File might have been deleted, skip it
 				// Consider logging this if $this->logger is available and configured
-				// For now, just skipping.
 			}
 		}
 
