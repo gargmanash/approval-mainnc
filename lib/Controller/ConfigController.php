@@ -20,7 +20,7 @@ use OCP\IUserManager;
 use OCP\IDBConnection;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
-use OCP\IQueryBuilder;
+use OCP\DB\IQueryBuilder;
 
 class ConfigController extends Controller {
 
@@ -185,21 +185,28 @@ class ConfigController extends Controller {
 		$mainQb->select('file_id', 'rule_id', 'new_state', 'timestamp')
 			->from('approval_activity', 'aa'); // Alias 'aa' for the table
 
-		$orConditions = $mainQb->expr()->orX(); // Initialize OR condition group
 		$paramIndex = 0;
-		foreach ($latestEntriesMap as $fileId => $maxTimestamp) {
-			$fileIdParamName = 'file_id_' . $paramIndex;
-			$timestampParamName = 'timestamp_' . $paramIndex;
+		if (!empty($latestEntriesMap)) { // Check if there are entries to process
+			$orConditions = $mainQb->expr()->orX(); // Initialize OR condition group only if needed
+			foreach ($latestEntriesMap as $fileId => $maxTimestamp) {
+				$fileIdParamName = 'file_id_' . $paramIndex;
+				$timestampParamName = 'timestamp_' . $paramIndex;
 
-			// Assuming file_id and timestamp are integers. Adjust PARAM_INT if types differ.
-			$andConditions = $mainQb->expr()->andX(
-				$mainQb->expr()->eq('aa.file_id', $mainQb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT, ':' . $fileIdParamName)),
-				$mainQb->expr()->eq('aa.timestamp', $mainQb->createNamedParameter($maxTimestamp, IQueryBuilder::PARAM_INT, ':' . $timestampParamName))
-			);
-			$orConditions->add($andConditions);
-			$paramIndex++;
+				// Assuming file_id and timestamp are integers. Adjust PARAM_INT if types differ.
+				$andConditions = $mainQb->expr()->andX(
+					$mainQb->expr()->eq('aa.file_id', $mainQb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT, ':' . $fileIdParamName)),
+					$mainQb->expr()->eq('aa.timestamp', $mainQb->createNamedParameter($maxTimestamp, IQueryBuilder::PARAM_INT, ':' . $timestampParamName))
+				);
+				$orConditions->add($andConditions);
+				$paramIndex++;
+			}
+			$mainQb->where($orConditions); // Add where clause only if orConditions has expressions
+		} else {
+			// If latestEntriesMap is empty, we effectively want no results from this part of the query.
+			// Executing a query with no WHERE clause would fetch all, which is wrong.
+			// So, we can return an empty DataResponse directly, similar to the check above.
+			return new DataResponse([]);
 		}
-		$mainQb->where($orConditions);
 
 		$stmtMain = $mainQb->execute();
 		$results = $stmtMain->fetchAll();
