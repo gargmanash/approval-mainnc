@@ -154,8 +154,9 @@ class ConfigController extends Controller {
 	public function getAllApprovalFiles(): DataResponse {
 		// Step 1: Get the latest timestamp for each file_id
 		$latestTimestampQb = $this->db->getQueryBuilder();
+		$platform = $this->db->getDatabasePlatform(); // Get the platform
 		$latestTimestampQb->select('file_id')
-			->addSelect('MAX(' . $latestTimestampQb->quoteIdentifier('timestamp') . ') AS max_timestamp')
+			->addSelect('MAX(' . $platform->quoteIdentifier('timestamp') . ')', 'max_timestamp') // Use platform for quoting and alias as second param
 			->from('approval_activity')
 			->groupBy('file_id');
 
