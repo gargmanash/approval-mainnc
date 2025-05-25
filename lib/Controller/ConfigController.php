@@ -155,8 +155,10 @@ class ConfigController extends Controller {
 
 		// Subquery to get the latest timestamp for each file_id
 		$subQuery = $this->db->getQueryBuilder();
-		$subQuery->select('file_id')
-			->addSelect($subQuery->func('MAX', 'timestamp'), 'max_timestamp')
+		$subQuery->select([
+				'file_id',
+				'max_timestamp' => $subQuery->func('MAX', 'timestamp')
+			])
 			->from('approval_activity')
 			->groupBy('file_id');
 
