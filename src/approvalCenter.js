@@ -13,7 +13,7 @@
 const initApprovalCenter = () => {
 	const el = document.getElementById('approval-center-vue-root')
 	if (el) {
-		el.textContent = 'JavaScript reached initApprovalCenter and found the root element.';
+		el.textContent = 'JavaScript reached initApprovalCenter and found the root element.'
 		/* const app = new Vue({
 			render: h => h(ApprovalCenterView),
 		})
