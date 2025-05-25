@@ -171,7 +171,7 @@ class ConfigController extends Controller {
 
 		$stmtSub = $latestTimestampQb->execute();
 		$latestEntriesMap = []; // Key: file_id, Value: max_timestamp
-		while ($row = $stmtSub->fetchAssociative()) {
+		while ($row = $stmtSub->fetch()) {
 			$latestEntriesMap[$row['file_id']] = $row['max_timestamp'];
 		}
 		$stmtSub->closeCursor();
@@ -202,7 +202,7 @@ class ConfigController extends Controller {
 		$mainQb->where($orConditions);
 
 		$stmtMain = $mainQb->execute();
-		$results = $stmtMain->fetchAllAssociative();
+		$results = $stmtMain->fetchAll();
 		$stmtMain->closeCursor();
 
 		$allFilesData = [];
