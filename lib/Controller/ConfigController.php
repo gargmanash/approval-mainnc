@@ -152,34 +152,32 @@ class ConfigController extends Controller {
 	}
 
 	public function getAllApprovalFiles(): DataResponse {
-		// Step 1: Get the latest timestamp for each file_id
+		$qb = $this->db->getQueryBuilder();
+
+		// Alias for the main table
+		$mainAlias = 'aa';
+		// Alias for the subquery
+		$subAlias = 'latest_aa';
+
+		// Step 1: Define the subquery to get the latest timestamp for each file_id
 		$subQuery = $this->db->getQueryBuilder();
 		$subQuery->select('file_id')
-			->addSelect('MAX(' . $subQuery->quoteIdentifier('timestamp') . ')', 'max_timestamp')
+			->addSelect('MAX(' . $this->db->quoteIdentifier('timestamp') . ') AS max_timestamp')
 			->from('approval_activity')
 			->groupBy('file_id');
 
-		$stmtSub = $subQuery->execute();
-		$latestTimestamps = $stmtSub->fetchAll();
-		$stmtSub->closeCursor();
-
-		if (empty($latestTimestamps)) {
-			return new DataResponse([]);
-		}
-
-		// Step 2: Build the main query using the results from the subquery
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('aa.file_id', 'aa.rule_id', 'aa.new_state', 'aa.timestamp')
-			->from('approval_activity', 'aa');
-
-		$orConditions = $qb->expr()->orX();
-		foreach ($latestTimestamps as $latest) {
-			$andConditions = $qb->expr()->andX();
-			$andConditions->add($qb->expr()->eq('aa.file_id', $qb->createNamedParameter($latest['file_id'])));
-			$andConditions->add($qb->expr()->eq('aa.timestamp', $qb->createNamedParameter($latest['max_timestamp'], IQueryBuilder::PARAM_INT)));
-			$orConditions->add($andConditions);
-		}
-		$qb->where($orConditions);
+		// Step 2: Build the main query
+		$qb->select($mainAlias . '.file_id', $mainAlias . '.rule_id', $mainAlias . '.new_state', $mainAlias . '.timestamp')
+			->from('approval_activity', $mainAlias)
+			->innerJoin(
+				$mainAlias,
+				'(' . $subQuery->getSQL() . ')', // The subquery SQL
+				$subAlias, // Alias for the subquery result
+				$qb->expr()->andX( // Join condition
+					$qb->expr()->eq($mainAlias . '.file_id', $subAlias . '.file_id'),
+					$qb->expr()->eq($mainAlias . '.timestamp', $subAlias . '.max_timestamp')
+				)
+			);
 
 		$stmt = $qb->execute();
 		$results = $stmt->fetchAll();
