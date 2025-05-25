@@ -192,8 +192,8 @@ class ConfigController extends Controller {
 			$timestampParamName = 'timestamp_' . $paramIndex;
 
 			$currentAndConditions = $mainQb->expr()->andX(
-				$mainQb->expr()->eq('aa.file_id', $mainQb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT, ':' . $fileIdParamName)),
-				$mainQb->expr()->eq('aa.timestamp', $mainQb->createNamedParameter($maxTimestamp, IQueryBuilder::PARAM_INT, ':' . $timestampParamName))
+				$mainQb->expr()->eq('aa.file_id', $mainQb->createNamedParameter($fileId, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT, ':' . $fileIdParamName)),
+				$mainQb->expr()->eq('aa.timestamp', $mainQb->createNamedParameter($maxTimestamp, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT, ':' . $timestampParamName))
 			);
 			$allAndConditions[] = $currentAndConditions;
 			$paramIndex++;
