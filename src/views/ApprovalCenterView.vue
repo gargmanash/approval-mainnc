@@ -183,11 +183,11 @@ export default {
 			console.log('[ApprovalCenterView] reloadData: starting...')
 			this.loading = true
 			try {
-			await this.fetchAllApprovalFiles()
-			await this.fetchWorkflows()
-			await this.fetchWorkflowKpis()
+				await this.fetchAllApprovalFiles()
+				await this.fetchWorkflows()
+				await this.fetchWorkflowKpis()
 			} finally {
-			this.loading = false
+				this.loading = false
 				// eslint-disable-next-line no-console
 				console.log('[ApprovalCenterView] reloadData: finished. loading:', this.loading)
 				// eslint-disable-next-line no-console
