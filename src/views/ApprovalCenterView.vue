@@ -100,11 +100,12 @@ export default {
 			const tree = []
 			const map = {}
 
-			// Initialize tree structure and map all nodes
+			// Build tree: folders and files as siblings
 			this.allApprovalFiles.forEach(file => {
 				const pathParts = file.path.split('/').filter(p => p !== '')
 				let currentLevel = tree
 				let currentPath = ''
+				let parentNode = null
 
 				pathParts.forEach((part, index) => {
 					currentPath += '/' + part
@@ -123,20 +124,27 @@ export default {
 							if (file.status_code === STATUS_PENDING) existingNode.kpis.pending = 1
 							else if (file.status_code === STATUS_APPROVED) existingNode.kpis.approved = 1
 							else if (file.status_code === STATUS_REJECTED) existingNode.kpis.rejected = 1
+							// Add file node to its parent folder's children
+							if (parentNode && parentNode.children) {
+								parentNode.children.push(existingNode)
+							}
+							map[currentPath] = existingNode
+							return // File node added, stop here
 						} else { // Folder node
 							existingNode = {
 								name: part,
 								type: 'folder',
 								path: currentPath,
 								children: [],
-								kpis: { pending: 0, approved: 0, rejected: 0 }, // Initialize KPIs for folders
-								expanded: !!this.expandedFolderStates[currentPath], // Use expandedFolderStates
+								kpis: { pending: 0, approved: 0, rejected: 0 },
+								expanded: !!this.expandedFolderStates[currentPath],
 							}
+							map[currentPath] = existingNode
+							currentLevel.push(existingNode)
 						}
-						map[currentPath] = existingNode
-						currentLevel.push(existingNode)
 					}
 					if (existingNode.type === 'folder') {
+						parentNode = existingNode
 						currentLevel = existingNode.children
 					}
 				})
