@@ -25,7 +25,8 @@
 						:workflows="workflows"
 						@approve-file="handleApproveFile"
 						@reject-file="handleRejectFile"
-						@view-file="handleViewFile" />
+						@view-file="handleViewFile"
+						@toggle-expand="handleToggleExpand" />
 					<p v-else>
 						{{ t('approval', 'No files found in the approval system.') }}
 					</p>
@@ -178,6 +179,34 @@ export default {
 	},
 	methods: {
 		t: translate,
+		handleToggleExpand(itemToToggle) {
+			// eslint-disable-next-line no-console
+			console.log('[ApprovalCenterView] handleToggleExpand called for:', itemToToggle.name)
+			const findAndToggle = (nodes) => {
+				for (const node of nodes) {
+					if (node.path === itemToToggle.path) {
+						node.expanded = !node.expanded
+						// eslint-disable-next-line no-console
+						console.log(`[ApprovalCenterView] Toggled '${node.name}'. New expanded state: ${node.expanded}`)
+						// Force reactivity if Vue is being difficult. This creates a new object reference.
+						// this.$set(this.fileTreeWithKpis, this.fileTreeWithKpis.indexOf(node), Object.assign({}, node)); // This won't work as fileTreeWithKpis is computed
+						return true
+					}
+					if (node.children && findAndToggle(node.children)) {
+						return true
+					}
+				}
+				return false
+			}
+
+			if (findAndToggle(this.fileTreeWithKpis)) {
+				// One way to try and force update if direct mutation isn't working
+				this.fileTreeWithKpis = [...this.fileTreeWithKpis]
+			} else {
+				// eslint-disable-next-line no-console
+				console.warn('[ApprovalCenterView] Item not found in tree to toggle:', itemToToggle.name)
+			}
+		},
 		async reloadData() {
 			// eslint-disable-next-line no-console
 			console.log('[ApprovalCenterView] reloadData: starting...')

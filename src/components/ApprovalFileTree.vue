@@ -52,7 +52,8 @@
 					:workflows="workflows"
 					@approve-file="$emit('approve-file', $event)"
 					@reject-file="$emit('reject-file', $event)"
-					@view-file="$emit('view-file', $event)" />
+					@view-file="$emit('view-file', $event)"
+					@toggle-expand="$emit('toggle-expand', $event)" />
 			</li>
 		</ul>
 	</div>
@@ -88,7 +89,7 @@ export default {
 			required: true,
 		},
 	},
-	emits: ['approve-file', 'reject-file', 'view-file'],
+	emits: ['approve-file', 'reject-file', 'view-file', 'toggle-expand'],
 	data() {
 		return {
 			STATUS_PENDING, // Expose to template
@@ -100,9 +101,7 @@ export default {
 		t: translate,
 		toggleFolder(item) {
 			if (item.type === 'folder') {
-				item.expanded = !item.expanded
-				// eslint-disable-next-line no-console
-				console.log(`[ApprovalFileTree] Toggled folder '${item.name}'. Expanded: ${item.expanded}`)
+				this.$emit('toggle-expand', item)
 			}
 		},
 		getMimeIcon(mimetype) {
