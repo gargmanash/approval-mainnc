@@ -224,7 +224,7 @@ export default {
 				const response = await axios.get(generateUrl('/apps/approval/rules'))
 				// eslint-disable-next-line no-console
 				console.log('[ApprovalCenterView] fetchWorkflows: response.data:', JSON.parse(JSON.stringify(response.data)))
-				this.workflows = response.data || []
+				this.workflows = response.data ? Object.values(response.data) : []
 				// eslint-disable-next-line no-console
 				console.log('[ApprovalCenterView] fetchWorkflows: this.workflows set, length:', this.workflows.length)
 			} catch (e) {
