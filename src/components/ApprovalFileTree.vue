@@ -100,6 +100,8 @@ export default {
 		toggleFolder(item) {
 			if (item.type === 'folder') {
 				item.expanded = !item.expanded
+				// eslint-disable-next-line no-console
+				console.log(`[ApprovalFileTree] Toggled folder '${item.name}'. Expanded: ${item.expanded}`)
 			}
 		},
 		getMimeIcon(mimetype) {
