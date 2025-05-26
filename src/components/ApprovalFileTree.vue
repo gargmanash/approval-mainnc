@@ -21,7 +21,11 @@
 					<NcButton type="secondary" @click.stop="rejectFile(item.originalFile)">
 						{{ t('approval', 'Reject') }}
 					</NcButton>
-					<NcButton type="tertiary" class="icon-only" @click.stop="viewFile(item.originalFile)">
+					<NcButton
+						type="tertiary"
+						class="icon-only"
+						:aria-label="t('approval', 'View file {fileName}', { fileName: item.originalFile.file_name })"
+						@click.stop="viewFile(item.originalFile)">
 						<template #icon>
 							<OpenInNewIcon :size="20" />
 						</template>
@@ -30,7 +34,11 @@
 				<div v-else-if="item.type === 'file'" class="file-status-indicator">
 					<span v-if="item.originalFile.status_code === STATUS_APPROVED" class="status-approved">{{ t('approval', 'Approved') }}</span>
 					<span v-else-if="item.originalFile.status_code === STATUS_REJECTED" class="status-rejected">{{ t('approval', 'Rejected') }}</span>
-					<NcButton type="tertiary" class="icon-only" @click.stop="viewFile(item.originalFile)">
+					<NcButton
+						type="tertiary"
+						class="icon-only"
+						:aria-label="t('approval', 'View file {fileName}', { fileName: item.originalFile.file_name })"
+						@click.stop="viewFile(item.originalFile)">
 						<template #icon>
 							<OpenInNewIcon :size="20" />
 						</template>

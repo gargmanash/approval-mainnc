@@ -128,7 +128,7 @@ export default {
 								path: currentPath,
 								children: [],
 								kpis: { pending: 0, approved: 0, rejected: 0 }, // Initialize KPIs for folders
-								expanded: true,
+								expanded: false,
 							}
 						}
 						map[currentPath] = existingNode
