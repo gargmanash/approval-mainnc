@@ -46,7 +46,8 @@
 				</div>
 
 				<ApprovalFileTree
-					v-if="item.type === 'folder' && item.expanded"
+					v-if="item.type === 'folder' && item.expanded && item.children && item.children.length"
+					:key="item.path + '-' + item.expanded"
 					:tree-data="item.children"
 					:workflows="workflows"
 					@approve-file="$emit('approve-file', $event)"
