@@ -107,7 +107,7 @@ export default {
 		},
 		getRuleDescription(ruleId) {
 			const rule = this.workflows.find(w => w.id === ruleId)
-			return rule ? rule.description : t('approval', 'Unknown Rule')
+			return rule ? rule.description : this.t('approval', 'Unknown Rule')
 		},
 		approveFile(file) {
 			this.$emit('approve-file', file)
