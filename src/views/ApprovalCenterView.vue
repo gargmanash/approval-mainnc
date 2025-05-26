@@ -90,6 +90,7 @@ export default {
 			workflows: [],
 			workflowKpis: [],
 			currentSection: 'tree', // Default to tree view
+			expandedFolderStates: {}, // Added for managing folder expanded states
 		}
 	},
 	computed: {
@@ -129,7 +130,7 @@ export default {
 								path: currentPath,
 								children: [],
 								kpis: { pending: 0, approved: 0, rejected: 0 }, // Initialize KPIs for folders
-								expanded: false,
+								expanded: !!this.expandedFolderStates[currentPath], // Use expandedFolderStates
 							}
 						}
 						map[currentPath] = existingNode
@@ -181,31 +182,11 @@ export default {
 		t: translate,
 		handleToggleExpand(itemToToggle) {
 			// eslint-disable-next-line no-console
-			console.log('[ApprovalCenterView] handleToggleExpand called for:', itemToToggle.name)
-			const findAndToggle = (nodes) => {
-				for (const node of nodes) {
-					if (node.path === itemToToggle.path) {
-						node.expanded = !node.expanded
-						// eslint-disable-next-line no-console
-						console.log(`[ApprovalCenterView] Toggled '${node.name}'. New expanded state: ${node.expanded}`)
-						// Force reactivity if Vue is being difficult. This creates a new object reference.
-						// this.$set(this.fileTreeWithKpis, this.fileTreeWithKpis.indexOf(node), Object.assign({}, node)); // This won't work as fileTreeWithKpis is computed
-						return true
-					}
-					if (node.children && findAndToggle(node.children)) {
-						return true
-					}
-				}
-				return false
-			}
-
-			if (findAndToggle(this.fileTreeWithKpis)) {
-				// One way to try and force update if direct mutation isn't working
-				this.fileTreeWithKpis = [...this.fileTreeWithKpis]
-			} else {
-				// eslint-disable-next-line no-console
-				console.warn('[ApprovalCenterView] Item not found in tree to toggle:', itemToToggle.name)
-			}
+			console.log('[ApprovalCenterView] handleToggleExpand received for path:', itemToToggle.path)
+			const currentExpandedState = this.expandedFolderStates[itemToToggle.path] || false
+			this.$set(this.expandedFolderStates, itemToToggle.path, !currentExpandedState)
+			// eslint-disable-next-line no-console
+			console.log(`[ApprovalCenterView] Path '${itemToToggle.path}' new expanded state: ${this.expandedFolderStates[itemToToggle.path]}`)
 		},
 		async reloadData() {
 			// eslint-disable-next-line no-console
