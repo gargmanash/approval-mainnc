@@ -177,6 +177,7 @@ export default {
 		console.log('[ApprovalCenterView] mounted: workflowKpis.length:', this.workflowKpis.length)
 	},
 	methods: {
+		t: translate,
 		async reloadData() {
 			// eslint-disable-next-line no-console
 			console.log('[ApprovalCenterView] reloadData: starting...')
