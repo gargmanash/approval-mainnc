@@ -67,6 +67,7 @@ import { showError, showSuccess } from '@nextcloud/dialogs'
 import axios from '@nextcloud/axios'
 import ApprovalFileTree from '../components/ApprovalFileTree.vue'
 import { approve, reject } from '../files/helpers.js'
+import { translate } from '@nextcloud/l10n'
 
 const STATUS_PENDING = 1
 const STATUS_APPROVED = 2
@@ -92,6 +93,7 @@ export default {
 	},
 	computed: {
 		fileTreeWithKpis() {
+			console.log('[ApprovalCenterView] computed fileTreeWithKpis: input allApprovalFiles:', JSON.parse(JSON.stringify(this.allApprovalFiles)));
 			const tree = []
 			const map = {}
 
@@ -153,14 +155,22 @@ export default {
 			// Calculate KPIs for all top-level folders
 			tree.filter(node => node.type === 'folder').forEach(calculateFolderKpis)
 
+			console.log('[ApprovalCenterView] computed fileTreeWithKpis: output tree:', JSON.parse(JSON.stringify(tree)));
 			return tree
 		},
 	},
 	async mounted() {
+		console.log('[ApprovalCenterView] mounted hook called.');
 		await this.reloadData()
+		console.log('[ApprovalCenterView] mounted: after reloadData() - loading:', this.loading);
+		console.log('[ApprovalCenterView] mounted: currentSection:', this.currentSection);
+		console.log('[ApprovalCenterView] mounted: allApprovalFiles.length:', this.allApprovalFiles.length);
+		console.log('[ApprovalCenterView] mounted: fileTreeWithKpis.length (computed):', this.fileTreeWithKpis.length);
+		console.log('[ApprovalCenterView] mounted: workflowKpis.length:', this.workflowKpis.length);
 	},
 	methods: {
 		async reloadData() {
+			console.log('[ApprovalCenterView] reloadData: starting...');
 			this.loading = true
 			try {
 				await this.fetchAllApprovalFiles()
@@ -168,53 +178,68 @@ export default {
 				await this.fetchWorkflowKpis()
 			} finally {
 				this.loading = false
+				console.log('[ApprovalCenterView] reloadData: finished. loading:', this.loading);
+				console.log('[ApprovalCenterView] reloadData: currentSection:', this.currentSection);
+				console.log('[ApprovalCenterView] reloadData: allApprovalFiles.length:', this.allApprovalFiles.length);
+				// Note: Accessing computed property here will trigger its calculation if not already cached
+				console.log('[ApprovalCenterView] reloadData: fileTreeWithKpis.length (computed):', this.fileTreeWithKpis.length);
+				console.log('[ApprovalCenterView] reloadData: workflowKpis.length:', this.workflowKpis.length);
 			}
 		},
 		async fetchAllApprovalFiles() {
+			console.log('[ApprovalCenterView] fetchAllApprovalFiles: fetching...');
 			try {
 				const response = await axios.get(generateUrl('/apps/approval/all-approval-files'))
+				console.log('[ApprovalCenterView] fetchAllApprovalFiles: response.data:', JSON.parse(JSON.stringify(response.data)));
 				this.allApprovalFiles = response.data || []
+				console.log('[ApprovalCenterView] fetchAllApprovalFiles: this.allApprovalFiles set, length:', this.allApprovalFiles.length);
 			} catch (e) {
-				console.error(e)
-				showError(t('approval', 'Could not load all approval files data'))
+				console.error('[ApprovalCenterView] fetchAllApprovalFiles: error', e)
+				showError(translate('approval', 'Could not load all approval files data'))
 			}
 		},
 		async fetchWorkflows() {
+			console.log('[ApprovalCenterView] fetchWorkflows: fetching...');
 			try {
 				const response = await axios.get(generateUrl('/apps/approval/rules'))
+				console.log('[ApprovalCenterView] fetchWorkflows: response.data:', JSON.parse(JSON.stringify(response.data)));
 				this.workflows = response.data || []
+				console.log('[ApprovalCenterView] fetchWorkflows: this.workflows set, length:', this.workflows.length);
 			} catch (e) {
-				console.error(e)
-				showError(t('approval', 'Could not load workflows'))
+				console.error('[ApprovalCenterView] fetchWorkflows: error', e)
+				showError(translate('approval', 'Could not load workflows'))
 			}
 		},
 		async fetchWorkflowKpis() {
+			console.log('[ApprovalCenterView] fetchWorkflowKpis: fetching...');
 			try {
 				const response = await axios.get(generateUrl('/apps/approval/workflow-kpis'))
+				console.log('[ApprovalCenterView] fetchWorkflowKpis: response.data:', JSON.parse(JSON.stringify(response.data)));
 				this.workflowKpis = response.data || []
+				console.log('[ApprovalCenterView] fetchWorkflowKpis: this.workflowKpis set, length:', this.workflowKpis.length);
 			} catch (e) {
-				console.error(e)
-				showError(t('approval', 'Could not load workflow KPIs'))
+				console.error('[ApprovalCenterView] fetchWorkflowKpis: error', e)
+				showError(translate('approval', 'Could not load workflow KPIs'))
 			}
 		},
 		async handleApproveFile(file) {
 			try {
 				await approve(file.file_id, file.file_name, null, true) // originalFile is passed
-				showSuccess(t('approval', 'File "{fileName}" approved.', { fileName: file.file_name }))
+				showSuccess(translate('approval', 'File "{fileName}" approved.', { fileName: file.file_name }))
 				await this.reloadData()
 			} catch (err) {
 				console.error('Error approving file:', err)
-				showError(t('approval', 'Could not approve file "{fileName}".', { fileName: file.file_name }))
+				showError(translate('approval', 'Could not approve file "{fileName}".', { fileName: file.file_name }))
 			}
 		},
 		async handleRejectFile(file) {
 			try {
 				await reject(file.file_id, file.file_name, null, true) // originalFile is passed
-				showSuccess(t('approval', 'File "{fileName}" rejected.', { fileName: file.file_name }))
+				showSuccess(translate('approval', 'File "{fileName}" rejected.', { fileName: file.file_name }))
 				await this.reloadData()
 			} catch (err) {
 				console.error('Error rejecting file:', err)
-				showError(t('approval', 'Could not reject file "{fileName}".', { fileName: file.file_name }))
+				showError(translate('approval', 'Could not reject file "{fileName}".', { fileName: file.file_name }))
 			}
 		},
 		handleViewFile(file) {
