@@ -54,6 +54,7 @@ import { NcButton, NcIconSvgWrapper } from '@nextcloud/vue'
 import FolderIcon from 'vue-material-design-icons/Folder.vue'
 import FolderOpenIcon from 'vue-material-design-icons/FolderOpen.vue'
 import OpenInNewIcon from 'vue-material-design-icons/OpenInNew.vue'
+import { translate } from '@nextcloud/l10n'
 
 const STATUS_PENDING = 1
 const STATUS_APPROVED = 2
@@ -87,6 +88,7 @@ export default {
 		}
 	},
 	methods: {
+		t: translate,
 		toggleFolder(item) {
 			if (item.type === 'folder') {
 				item.expanded = !item.expanded
