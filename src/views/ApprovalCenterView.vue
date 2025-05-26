@@ -93,7 +93,8 @@ export default {
 	},
 	computed: {
 		fileTreeWithKpis() {
-			console.log('[ApprovalCenterView] computed fileTreeWithKpis: input allApprovalFiles:', JSON.parse(JSON.stringify(this.allApprovalFiles)));
+			// eslint-disable-next-line no-console
+			console.log('[ApprovalCenterView] computed fileTreeWithKpis: input allApprovalFiles:', JSON.parse(JSON.stringify(this.allApprovalFiles)))
 			const tree = []
 			const map = {}
 
@@ -155,22 +156,30 @@ export default {
 			// Calculate KPIs for all top-level folders
 			tree.filter(node => node.type === 'folder').forEach(calculateFolderKpis)
 
-			console.log('[ApprovalCenterView] computed fileTreeWithKpis: output tree:', JSON.parse(JSON.stringify(tree)));
+			// eslint-disable-next-line no-console
+			console.log('[ApprovalCenterView] computed fileTreeWithKpis: output tree:', JSON.parse(JSON.stringify(tree)))
 			return tree
 		},
 	},
 	async mounted() {
-		console.log('[ApprovalCenterView] mounted hook called.');
+		// eslint-disable-next-line no-console
+		console.log('[ApprovalCenterView] mounted hook called.')
 		await this.reloadData()
-		console.log('[ApprovalCenterView] mounted: after reloadData() - loading:', this.loading);
-		console.log('[ApprovalCenterView] mounted: currentSection:', this.currentSection);
-		console.log('[ApprovalCenterView] mounted: allApprovalFiles.length:', this.allApprovalFiles.length);
-		console.log('[ApprovalCenterView] mounted: fileTreeWithKpis.length (computed):', this.fileTreeWithKpis.length);
-		console.log('[ApprovalCenterView] mounted: workflowKpis.length:', this.workflowKpis.length);
+		// eslint-disable-next-line no-console
+		console.log('[ApprovalCenterView] mounted: after reloadData() - loading:', this.loading)
+		// eslint-disable-next-line no-console
+		console.log('[ApprovalCenterView] mounted: currentSection:', this.currentSection)
+		// eslint-disable-next-line no-console
+		console.log('[ApprovalCenterView] mounted: allApprovalFiles.length:', this.allApprovalFiles.length)
+		// eslint-disable-next-line no-console
+		console.log('[ApprovalCenterView] mounted: fileTreeWithKpis.length (computed):', this.fileTreeWithKpis.length)
+		// eslint-disable-next-line no-console
+		console.log('[ApprovalCenterView] mounted: workflowKpis.length:', this.workflowKpis.length)
 	},
 	methods: {
 		async reloadData() {
-			console.log('[ApprovalCenterView] reloadData: starting...');
+			// eslint-disable-next-line no-console
+			console.log('[ApprovalCenterView] reloadData: starting...')
 			this.loading = true
 			try {
 				await this.fetchAllApprovalFiles()
@@ -178,46 +187,63 @@ export default {
 				await this.fetchWorkflowKpis()
 			} finally {
 				this.loading = false
-				console.log('[ApprovalCenterView] reloadData: finished. loading:', this.loading);
-				console.log('[ApprovalCenterView] reloadData: currentSection:', this.currentSection);
-				console.log('[ApprovalCenterView] reloadData: allApprovalFiles.length:', this.allApprovalFiles.length);
+				// eslint-disable-next-line no-console
+				console.log('[ApprovalCenterView] reloadData: finished. loading:', this.loading)
+				// eslint-disable-next-line no-console
+				console.log('[ApprovalCenterView] reloadData: currentSection:', this.currentSection)
+				// eslint-disable-next-line no-console
+				console.log('[ApprovalCenterView] reloadData: allApprovalFiles.length:', this.allApprovalFiles.length)
 				// Note: Accessing computed property here will trigger its calculation if not already cached
-				console.log('[ApprovalCenterView] reloadData: fileTreeWithKpis.length (computed):', this.fileTreeWithKpis.length);
-				console.log('[ApprovalCenterView] reloadData: workflowKpis.length:', this.workflowKpis.length);
+				// eslint-disable-next-line no-console
+				console.log('[ApprovalCenterView] reloadData: fileTreeWithKpis.length (computed):', this.fileTreeWithKpis.length)
+				// eslint-disable-next-line no-console
+				console.log('[ApprovalCenterView] reloadData: workflowKpis.length:', this.workflowKpis.length)
 			}
 		},
 		async fetchAllApprovalFiles() {
-			console.log('[ApprovalCenterView] fetchAllApprovalFiles: fetching...');
+			// eslint-disable-next-line no-console
+			console.log('[ApprovalCenterView] fetchAllApprovalFiles: fetching...')
 			try {
 				const response = await axios.get(generateUrl('/apps/approval/all-approval-files'))
-				console.log('[ApprovalCenterView] fetchAllApprovalFiles: response.data:', JSON.parse(JSON.stringify(response.data)));
+				// eslint-disable-next-line no-console
+				console.log('[ApprovalCenterView] fetchAllApprovalFiles: response.data:', JSON.parse(JSON.stringify(response.data)))
 				this.allApprovalFiles = response.data || []
-				console.log('[ApprovalCenterView] fetchAllApprovalFiles: this.allApprovalFiles set, length:', this.allApprovalFiles.length);
+				// eslint-disable-next-line no-console
+				console.log('[ApprovalCenterView] fetchAllApprovalFiles: this.allApprovalFiles set, length:', this.allApprovalFiles.length)
 			} catch (e) {
+				// eslint-disable-next-line no-console
 				console.error('[ApprovalCenterView] fetchAllApprovalFiles: error', e)
 				showError(translate('approval', 'Could not load all approval files data'))
 			}
 		},
 		async fetchWorkflows() {
-			console.log('[ApprovalCenterView] fetchWorkflows: fetching...');
+			// eslint-disable-next-line no-console
+			console.log('[ApprovalCenterView] fetchWorkflows: fetching...')
 			try {
 				const response = await axios.get(generateUrl('/apps/approval/rules'))
-				console.log('[ApprovalCenterView] fetchWorkflows: response.data:', JSON.parse(JSON.stringify(response.data)));
+				// eslint-disable-next-line no-console
+				console.log('[ApprovalCenterView] fetchWorkflows: response.data:', JSON.parse(JSON.stringify(response.data)))
 				this.workflows = response.data || []
-				console.log('[ApprovalCenterView] fetchWorkflows: this.workflows set, length:', this.workflows.length);
+				// eslint-disable-next-line no-console
+				console.log('[ApprovalCenterView] fetchWorkflows: this.workflows set, length:', this.workflows.length)
 			} catch (e) {
+				// eslint-disable-next-line no-console
 				console.error('[ApprovalCenterView] fetchWorkflows: error', e)
 				showError(translate('approval', 'Could not load workflows'))
 			}
 		},
 		async fetchWorkflowKpis() {
-			console.log('[ApprovalCenterView] fetchWorkflowKpis: fetching...');
+			// eslint-disable-next-line no-console
+			console.log('[ApprovalCenterView] fetchWorkflowKpis: fetching...')
 			try {
 				const response = await axios.get(generateUrl('/apps/approval/workflow-kpis'))
-				console.log('[ApprovalCenterView] fetchWorkflowKpis: response.data:', JSON.parse(JSON.stringify(response.data)));
+				// eslint-disable-next-line no-console
+				console.log('[ApprovalCenterView] fetchWorkflowKpis: response.data:', JSON.parse(JSON.stringify(response.data)))
 				this.workflowKpis = response.data || []
-				console.log('[ApprovalCenterView] fetchWorkflowKpis: this.workflowKpis set, length:', this.workflowKpis.length);
+				// eslint-disable-next-line no-console
+				console.log('[ApprovalCenterView] fetchWorkflowKpis: this.workflowKpis set, length:', this.workflowKpis.length)
 			} catch (e) {
+				// eslint-disable-next-line no-console
 				console.error('[ApprovalCenterView] fetchWorkflowKpis: error', e)
 				showError(translate('approval', 'Could not load workflow KPIs'))
 			}
