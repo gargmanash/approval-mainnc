@@ -152,76 +152,67 @@ class ConfigController extends Controller {
 	}
 
 	public function getAllApprovalFiles(): DataResponse {
-		// Step 1: Get the latest timestamp for each file_id
-		$latestTimestampQb = $this->db->getQueryBuilder();
-		$platform = $this->db->getDatabasePlatform(); // Get the platform
-		
-		$latestTimestampQb->select('file_id'); // Select file_id first
-
-		// Create the MAX() function call for the timestamp
-		$maxTimestampFunction = $latestTimestampQb->createFunction(
-			'MAX(' . $platform->quoteIdentifier('timestamp') . ')'
-		);
-
-		// Add the MAX function with an alias
-		$latestTimestampQb->selectAlias($maxTimestampFunction, 'max_timestamp');
-		
-		$latestTimestampQb->from('approval_activity')
-			->groupBy('file_id');
-
-		$stmtSub = $latestTimestampQb->execute();
-		$latestEntriesMap = []; // Key: file_id, Value: max_timestamp
-		while ($row = $stmtSub->fetch()) {
-			$latestEntriesMap[$row['file_id']] = $row['max_timestamp'];
+		// Step 1: Get all file_ids in approval_activity
+		$qb = $this->db->getQueryBuilder();
+		$qb->selectDistinct('file_id')
+			->from('approval_activity');
+		$stmt = $qb->execute();
+		$fileIds = [];
+		while ($row = $stmt->fetch()) {
+			$fileIds[] = $row['file_id'];
 		}
-		$stmtSub->closeCursor();
+		$stmt->closeCursor();
 
-		if (empty($latestEntriesMap)) {
+		if (empty($fileIds)) {
 			return new DataResponse([]);
 		}
 
-		// Step 2: Build the main query to fetch the full rows for these latest entries
-		$mainQb = $this->db->getQueryBuilder();
-		$mainQb->select('file_id', 'rule_id', 'new_state', 'timestamp')
-			->from('approval_activity', 'aa'); // Alias 'aa' for the table
-
-		$allAndConditions = [];
-		$paramIndex = 0;
-		foreach ($latestEntriesMap as $fileId => $maxTimestamp) {
-			$fileIdParamName = 'file_id_' . $paramIndex;
-			$timestampParamName = 'timestamp_' . $paramIndex;
-
-			$currentAndConditions = $mainQb->expr()->andX(
-				$mainQb->expr()->eq('aa.file_id', $mainQb->createNamedParameter($fileId, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT, ':' . $fileIdParamName)),
-				$mainQb->expr()->eq('aa.timestamp', $mainQb->createNamedParameter($maxTimestamp, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT, ':' . $timestampParamName))
-			);
-			$allAndConditions[] = $currentAndConditions;
-			$paramIndex++;
-		}
-		$orConditions = $mainQb->expr()->orX(...$allAndConditions);
-		$mainQb->where($orConditions);
-
-		$stmtMain = $mainQb->execute();
-		$results = $stmtMain->fetchAll();
-		$stmtMain->closeCursor();
-
 		$allFilesData = [];
-		foreach ($results as $row) {
+		foreach ($fileIds as $fileId) {
+			// For each file, get the latest timestamp for each status
+			$statusTimestamps = [
+				1 => null, // Pending
+				2 => null, // Approved
+				3 => null, // Rejected
+			];
+			$qb2 = $this->db->getQueryBuilder();
+			$qb2->select('new_state', 'MAX(timestamp) as max_timestamp')
+				->from('approval_activity')
+				->where($qb2->expr()->eq('file_id', $qb2->createNamedParameter($fileId)))
+				->groupBy('new_state');
+			$stmt2 = $qb2->execute();
+			while ($row2 = $stmt2->fetch()) {
+				$statusTimestamps[(int)$row2['new_state']] = (int)$row2['max_timestamp'];
+			}
+			$stmt2->closeCursor();
+
+			// Get the latest rule_id and status_code for this file (as before)
+			$qb3 = $this->db->getQueryBuilder();
+			$qb3->select('rule_id', 'new_state')
+				->from('approval_activity')
+				->where($qb3->expr()->eq('file_id', $qb3->createNamedParameter($fileId)))
+				->orderBy('timestamp', 'DESC')
+				->setMaxResults(1);
+			$stmt3 = $qb3->execute();
+			$row3 = $stmt3->fetch();
+			$stmt3->closeCursor();
+
 			try {
-				$nodes = $this->rootFolder->getById((int)$row['file_id']);
+				$nodes = $this->rootFolder->getById((int)$fileId);
 				if (!empty($nodes)) {
 					$node = $nodes[0];
 					$allFilesData[] = [
-						'file_id' => (int)$row['file_id'],
+						'file_id' => (int)$fileId,
 						'path' => $node->getPath(),
-						'rule_id' => (int)$row['rule_id'],
-						'status_code' => (int)$row['new_state'], // 1:pending, 2:approved, 3:rejected
-						'timestamp' => (int)$row['timestamp'],
+						'rule_id' => isset($row3['rule_id']) ? (int)$row3['rule_id'] : null,
+						'status_code' => isset($row3['new_state']) ? (int)$row3['new_state'] : null,
+						'sent_at' => $statusTimestamps[1],
+						'approved_at' => $statusTimestamps[2],
+						'rejected_at' => $statusTimestamps[3],
 					];
 				}
 			} catch (NotFoundException $e) {
 				// File might have been deleted, skip it
-				// Consider logging this if $this->logger is available and configured
 			}
 		}
 
