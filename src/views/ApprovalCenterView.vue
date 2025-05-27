@@ -143,9 +143,15 @@ export default {
 					else if (file.status_code === STATUS_APPROVED) fileNode.kpis.approved = 1
 					else if (file.status_code === STATUS_REJECTED) fileNode.kpis.rejected = 1
 					if (parentNode && parentNode.children) {
-						parentNode.children.push(fileNode)
+						// Prevent duplicate file nodes
+						if (!parentNode.children.some(child => child.type === 'file' && child.name === fileName)) {
+							parentNode.children.push(fileNode)
+						}
 					} else {
-						tree.push(fileNode) // In case there is no parent folder (shouldn't happen)
+						// Prevent duplicate file nodes at root
+						if (!tree.some(child => child.type === 'file' && child.name === fileName)) {
+							tree.push(fileNode)
+						}
 					}
 					map[filePath] = fileNode
 				}
