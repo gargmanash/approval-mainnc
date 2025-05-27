@@ -2,7 +2,9 @@
 	<div id="approval-analytics-page">
 		<h1>{{ t('approval', 'Approval Analytics') }}</h1>
 		<div v-if="loading">
-			<p>{{ t('approval', 'Loading data...') }}</p>
+			<p>
+				{{ t('approval', 'Loading data...') }}
+			</p>
 		</div>
 		<div v-else>
 			<table v-if="allApprovalFiles.length" class="analytics-table">
@@ -27,7 +29,9 @@
 					</tr>
 				</tbody>
 			</table>
-			<p v-else>{{ t('approval', 'No approval files found.') }}</p>
+			<p v-else>
+				{{ t('approval', 'No approval files found.') }}
+			</p>
 		</div>
 	</div>
 </template>
@@ -84,10 +88,10 @@ export default {
 		},
 		getStatusLabel(status) {
 			switch (status) {
-				case 1: return t('approval', 'Pending')
-				case 2: return t('approval', 'Approved')
-				case 3: return t('approval', 'Rejected')
-				default: return status
+			case 1: return t('approval', 'Pending')
+			case 2: return t('approval', 'Approved')
+			case 3: return t('approval', 'Rejected')
+			default: return status
 			}
 		},
 		formatTimestamp(ts) {
