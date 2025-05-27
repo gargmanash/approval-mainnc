@@ -100,54 +100,55 @@ export default {
 			const tree = []
 			const map = {}
 
-			// Build tree: folders and files as siblings
+			// Build tree: folders and files as siblings, files only under their true parent
 			this.allApprovalFiles.forEach(file => {
 				const pathParts = file.path.split('/').filter(p => p !== '')
 				let currentLevel = tree
 				let currentPath = ''
 				let parentNode = null
 
-				pathParts.forEach((part, index) => {
+				// Traverse all but the last part (which is the file)
+				for (let i = 0; i < pathParts.length - 1; i++) {
+					const part = pathParts[i]
 					currentPath += '/' + part
 					let existingNode = map[currentPath]
-
 					if (!existingNode) {
-						if (index === pathParts.length - 1) { // File node
-							existingNode = {
-								name: part,
-								type: 'file',
-								path: currentPath,
-								originalFile: file, // Includes status_code, rule_id etc.
-								kpis: { pending: 0, approved: 0, rejected: 0 },
-							}
-							// For files, their own status contributes to their KPI (as a leaf node)
-							if (file.status_code === STATUS_PENDING) existingNode.kpis.pending = 1
-							else if (file.status_code === STATUS_APPROVED) existingNode.kpis.approved = 1
-							else if (file.status_code === STATUS_REJECTED) existingNode.kpis.rejected = 1
-							// Add file node to its parent folder's children
-							if (parentNode && parentNode.children) {
-								parentNode.children.push(existingNode)
-							}
-							map[currentPath] = existingNode
-							return // File node added, stop here
-						} else { // Folder node
-							existingNode = {
-								name: part,
-								type: 'folder',
-								path: currentPath,
-								children: [],
-								kpis: { pending: 0, approved: 0, rejected: 0 },
-								expanded: !!this.expandedFolderStates[currentPath],
-							}
-							map[currentPath] = existingNode
-							currentLevel.push(existingNode)
+						existingNode = {
+							name: part,
+							type: 'folder',
+							path: currentPath,
+							children: [],
+							kpis: { pending: 0, approved: 0, rejected: 0 },
+							expanded: !!this.expandedFolderStates[currentPath],
 						}
+						map[currentPath] = existingNode
+						currentLevel.push(existingNode)
 					}
-					if (existingNode.type === 'folder') {
-						parentNode = existingNode
-						currentLevel = existingNode.children
+					parentNode = existingNode
+					currentLevel = existingNode.children
+				}
+
+				// Now add the file node as a child of the last folder
+				const fileName = pathParts[pathParts.length - 1]
+				const filePath = currentPath + '/' + fileName
+				if (!map[filePath]) {
+					const fileNode = {
+						name: fileName,
+						type: 'file',
+						path: filePath,
+						originalFile: file,
+						kpis: { pending: 0, approved: 0, rejected: 0 },
 					}
-				})
+					if (file.status_code === STATUS_PENDING) fileNode.kpis.pending = 1
+					else if (file.status_code === STATUS_APPROVED) fileNode.kpis.approved = 1
+					else if (file.status_code === STATUS_REJECTED) fileNode.kpis.rejected = 1
+					if (parentNode && parentNode.children) {
+						parentNode.children.push(fileNode)
+					} else {
+						tree.push(fileNode) // In case there is no parent folder (shouldn't happen)
+					}
+					map[filePath] = fileNode
+				}
 			})
 
 			// Recursive function to calculate KPIs upwards
