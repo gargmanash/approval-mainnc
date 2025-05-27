@@ -9,6 +9,8 @@ namespace OCA\Approval\Controller;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IRequest;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 
 class PageController extends Controller {
 	public function __construct(
@@ -18,10 +20,6 @@ class PageController extends Controller {
 		parent::__construct($appName, $request);
 	}
 
-	/**
-	 * @NoAdminRequired
-	 * @NoCSRFRequired
-	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function approvalCenter(): TemplateResponse {

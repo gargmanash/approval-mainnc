@@ -22,8 +22,8 @@ use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 
-use OCP\AppFramework\Http\NoAdminRequired;
-use OCP\AppFramework\Http\NoCSRFRequired;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 
 class ConfigController extends Controller {
 
