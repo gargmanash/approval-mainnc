@@ -71,6 +71,9 @@ class ConfigController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function getRules(): DataResponse {
+		if (!$this->userId) {
+			$this->userId = \OC::$server->getUserSession()->getUser() ? \OC::$server->getUserSession()->getUser()->getUID() : null;
+		}
 		$this->logUserContext('getRules');
 		$circlesEnabled = $this->appManager->isEnabledForUser('circles') && class_exists(\OCA\Circles\CirclesManager::class);
 		if ($circlesEnabled) {
@@ -126,6 +129,9 @@ class ConfigController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function getWorkflowKpis(): DataResponse {
+		if (!$this->userId) {
+			$this->userId = \OC::$server->getUserSession()->getUser() ? \OC::$server->getUserSession()->getUser()->getUID() : null;
+		}
 		$this->logUserContext('getWorkflowKpis');
 		$rules = $this->ruleService->getRules();
 		$kpis = [];
@@ -171,6 +177,9 @@ class ConfigController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function getAllApprovalFiles(): DataResponse {
+		if (!$this->userId) {
+			$this->userId = \OC::$server->getUserSession()->getUser() ? \OC::$server->getUserSession()->getUser()->getUID() : null;
+		}
 		$this->logUserContext('getAllApprovalFiles');
 		// Step 1: Get all file_ids in approval_activity
 		$qb = $this->db->getQueryBuilder();
@@ -295,6 +304,9 @@ class ConfigController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function testAccess(): DataResponse {
+		if (!$this->userId) {
+			$this->userId = \OC::$server->getUserSession()->getUser() ? \OC::$server->getUserSession()->getUser()->getUID() : null;
+		}
 		return new DataResponse(['ok' => true, 'user' => $this->userId]);
 	}
 }
