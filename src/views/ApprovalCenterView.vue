@@ -166,6 +166,17 @@ export default {
 			// Calculate KPIs for all top-level folders
 			tree.filter(node => node.type === 'folder').forEach(calculateFolderKpis)
 
+			// Find the 'files' node under the root (usually 'admin')
+			if (tree.length === 1 && tree[0].name === 'admin') {
+				const adminNode = tree[0]
+				const filesNode = adminNode.children.find(child => child.type === 'folder' && child.name === 'files')
+				if (filesNode) {
+					// eslint-disable-next-line no-console
+					console.log('[ApprovalCenterView] Returning filesNode.children as root of tree')
+					return filesNode.children
+				}
+			}
+
 			// eslint-disable-next-line no-console
 			console.log('[ApprovalCenterView] computed fileTreeWithKpis: output tree:', JSON.parse(JSON.stringify(tree)))
 			return tree
