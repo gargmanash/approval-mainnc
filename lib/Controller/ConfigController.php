@@ -114,6 +114,8 @@ class ConfigController extends Controller {
 		return new DataResponse($rules);
 	}
 
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
 	public function getWorkflowKpis(): DataResponse {
 		$rules = $this->ruleService->getRules();
 		$kpis = [];
@@ -156,6 +158,8 @@ class ConfigController extends Controller {
 		return new DataResponse($kpis);
 	}
 
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
 	public function getAllApprovalFiles(): DataResponse {
 		// Step 1: Get all file_ids in approval_activity
 		$qb = $this->db->getQueryBuilder();
