@@ -17,7 +17,6 @@ return [
 		['name' => 'Config#createTag', 'url' => '/tag', 'verb' => 'POST'],
 		['name' => 'Config#getWorkflowKpis', 'url' => '/workflow-kpis', 'verb' => 'GET'],
 		['name' => 'Config#getAllApprovalFiles', 'url' => '/all-approval-files', 'verb' => 'GET'],
-		['name' => 'Config#testAccess', 'url' => '/test-access', 'verb' => 'GET'],
 
 		/**
 		 * Page Controllers

@@ -21,9 +21,6 @@ use OCP\IDBConnection;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
 use OCP\DB\QueryBuilder\IQueryBuilder;
-use OCP\AppFramework\Http\Attribute\NoAdminRequired;
-use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
-use OCP\ILogger;
 
 class ConfigController extends Controller {
 
@@ -36,17 +33,9 @@ class ConfigController extends Controller {
 		private UtilsService $utilsService,
 		private ?string $userId,
 		private IDBConnection $db,
-		private IRootFolder $rootFolder,
-		ILogger $logger
+		private IRootFolder $rootFolder
 	) {
 		parent::__construct($appName, $request);
-		$this->logger = $logger;
-	}
-
-	private function logUserContext($method) {
-		$user = $this->userManager->get($this->userId);
-		$isAdmin = $user ? ($user->isAdmin() ? 'yes' : 'no') : 'null';
-		$this->logger->info("[Approval] $method called by userId={$this->userId}, isAdmin={$isAdmin}");
 	}
 
 	/**
@@ -68,13 +57,7 @@ class ConfigController extends Controller {
 	 *
 	 * @return DataResponse
 	 */
-	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function getRules(): DataResponse {
-		if (!$this->userId) {
-			$this->userId = \OC::$server->getUserSession()->getUser() ? \OC::$server->getUserSession()->getUser()->getUID() : null;
-		}
-		$this->logUserContext('getRules');
 		$circlesEnabled = $this->appManager->isEnabledForUser('circles') && class_exists(\OCA\Circles\CirclesManager::class);
 		if ($circlesEnabled) {
 			$circlesManager = \OC::$server->get(\OCA\Circles\CirclesManager::class);
@@ -126,13 +109,7 @@ class ConfigController extends Controller {
 		return new DataResponse($rules);
 	}
 
-	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function getWorkflowKpis(): DataResponse {
-		if (!$this->userId) {
-			$this->userId = \OC::$server->getUserSession()->getUser() ? \OC::$server->getUserSession()->getUser()->getUID() : null;
-		}
-		$this->logUserContext('getWorkflowKpis');
 		$rules = $this->ruleService->getRules();
 		$kpis = [];
 
@@ -174,13 +151,7 @@ class ConfigController extends Controller {
 		return new DataResponse($kpis);
 	}
 
-	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function getAllApprovalFiles(): DataResponse {
-		if (!$this->userId) {
-			$this->userId = \OC::$server->getUserSession()->getUser() ? \OC::$server->getUserSession()->getUser()->getUID() : null;
-		}
-		$this->logUserContext('getAllApprovalFiles');
 		// Step 1: Get all file_ids in approval_activity
 		$qb = $this->db->getQueryBuilder();
 		$qb->selectDistinct('file_id')
@@ -299,14 +270,5 @@ class ConfigController extends Controller {
 		return isset($result['error'])
 			? new DataResponse($result, 400)
 			: new DataResponse();
-	}
-
-	#[NoAdminRequired]
-	#[NoCSRFRequired]
-	public function testAccess(): DataResponse {
-		if (!$this->userId) {
-			$this->userId = \OC::$server->getUserSession()->getUser() ? \OC::$server->getUserSession()->getUser()->getUID() : null;
-		}
-		return new DataResponse(['ok' => true, 'user' => $this->userId]);
 	}
 }
