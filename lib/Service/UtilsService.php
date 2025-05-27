@@ -76,9 +76,10 @@ class UtilsService {
 	 * @param string $sharedWith
 	 * @param string $sharedBy
 	 * @param string $label
+	 * @param string|null $originalRelativePath
 	 * @return bool success
 	 */
-	public function createShare(Node $node, int $type, string $sharedWith, string $sharedBy, string $label): bool {
+	public function createShare(Node $node, int $type, string $sharedWith, string $sharedBy, string $label, ?string $originalRelativePath = null): bool {
 		$share = $this->shareManager->newShare();
 		$share->setNode($node)
 			// share permission is not necessary for rule chaining
@@ -90,6 +91,13 @@ class UtilsService {
 			->setSharedBy($sharedBy)
 			->setMailSend(false)
 			->setExpirationDate(null);
+
+		$finalTargetPathSuffix = $node->getName(); // Default to just the node name
+		if ($originalRelativePath !== null && $originalRelativePath !== '') {
+			// If a valid originalRelativePath is provided (could be 'file.txt' or 'folderA/file.txt'), use it.
+			$finalTargetPathSuffix = $originalRelativePath;
+		}
+		$share->setTargetPath('Shared/' . $finalTargetPathSuffix);
 
 		try {
 			$share = $this->shareManager->createShare($share);

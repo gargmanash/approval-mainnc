@@ -513,6 +513,12 @@ class ApprovalService {
 			$ownerNodeResults = $ownerFolder->getById($fileId);
 			if (count($ownerNodeResults) > 0) {
 				$node = $ownerNodeResults[0];
+				// --- START: Get original relative path ---
+				$originalRelativePath = $ownerFolder->getRelativePath($node->getPath());
+				if (str_starts_with($originalRelativePath, '/')) {
+					$originalRelativePath = substr($originalRelativePath, 1);
+				}
+				// --- END: Get original relative path ---
 			}
 		} else {
 			return [];
@@ -520,10 +526,16 @@ class ApprovalService {
 		$label = $this->l10n->t('Please check my approval request');
 		$fileOwner = $node->getOwner()->getUID();
 
+		// --- Initialize originalRelativePath if node wasn't found in owner's context (should not happen ideally) ---
+		if (!isset($originalRelativePath)) {
+			$originalRelativePath = $node->getName(); // Fallback to just the node name
+		}
+		// ---
+
 		foreach ($rule['approvers'] as $approver) {
 			if ($approver['type'] === 'user' && !$this->utilsService->userHasAccessTo($fileId, $approver['entityId'])) {
 				// create user share
-				if ($this->utilsService->createShare($node, IShare::TYPE_USER, $approver['entityId'], $fileOwner, $label)) {
+				if ($this->utilsService->createShare($node, IShare::TYPE_USER, $approver['entityId'], $fileOwner, $label, $originalRelativePath)) {
 					$createdShares[] = $approver;
 				}
 			}
@@ -531,7 +543,7 @@ class ApprovalService {
 		if ($this->shareManager->allowGroupSharing()) {
 			foreach ($rule['approvers'] as $approver) {
 				if ($approver['type'] === 'group') {
-					if ($this->utilsService->createShare($node, IShare::TYPE_GROUP, $approver['entityId'], $fileOwner, $label)) {
+					if ($this->utilsService->createShare($node, IShare::TYPE_GROUP, $approver['entityId'], $fileOwner, $label, $originalRelativePath)) {
 						$createdShares[] = $approver;
 					}
 				}
@@ -542,7 +554,7 @@ class ApprovalService {
 		if ($circlesEnabled) {
 			foreach ($rule['approvers'] as $approver) {
 				if ($approver['type'] === 'circle') {
-					if ($this->utilsService->createShare($node, IShare::TYPE_CIRCLE, $approver['entityId'], $fileOwner, $label)) {
+					if ($this->utilsService->createShare($node, IShare::TYPE_CIRCLE, $approver['entityId'], $fileOwner, $label, $originalRelativePath)) {
 						$createdShares[] = $approver;
 					}
 				}
