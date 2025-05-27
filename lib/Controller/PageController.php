@@ -22,6 +22,8 @@ class PageController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
 	public function approvalCenter(): TemplateResponse {
 		return new TemplateResponse($this->appName, 'approval_center', []);
 	}

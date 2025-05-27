@@ -22,6 +22,9 @@ use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 
+use OCP\AppFramework\Http\NoAdminRequired;
+use OCP\AppFramework\Http\NoCSRFRequired;
+
 class ConfigController extends Controller {
 
 	public function __construct(
@@ -57,6 +60,8 @@ class ConfigController extends Controller {
 	 *
 	 * @return DataResponse
 	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
 	public function getRules(): DataResponse {
 		$circlesEnabled = $this->appManager->isEnabledForUser('circles') && class_exists(\OCA\Circles\CirclesManager::class);
 		if ($circlesEnabled) {
