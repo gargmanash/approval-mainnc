@@ -176,10 +176,11 @@ class ConfigController extends Controller {
 				3 => null, // Rejected
 			];
 			$qb2 = $this->db->getQueryBuilder();
-			$qb2->select('new_state', 'MAX(timestamp) as max_timestamp')
-				->from('approval_activity')
-				->where($qb2->expr()->eq('file_id', $qb2->createNamedParameter($fileId)))
-				->groupBy('new_state');
+			$qb2->select('new_state');
+			$qb2->addSelect($qb2->createFunction('MAX(' . $qb2->getColumnName('timestamp') . ')') . ' AS max_timestamp');
+			$qb2->from('approval_activity');
+			$qb2->where($qb2->expr()->eq('file_id', $qb2->createNamedParameter($fileId)));
+			$qb2->groupBy('new_state');
 			$stmt2 = $qb2->execute();
 			while ($row2 = $stmt2->fetch()) {
 				if (isset($row2['new_state']) && isset($row2['max_timestamp'])) {
