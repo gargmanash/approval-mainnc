@@ -2,21 +2,11 @@
 	<div id="approval-center-view">
 		<NcAppContent app-name="approval">
 			<template #app-navigation>
-				<NcAppNavigation :title="t('approval', 'Approval Center')">
-					<NcAppNavigationItem :title="t('approval', 'Approval File Tree')" :active="currentSection === 'tree'" @click="currentSection = 'tree'" />
-					<NcAppNavigationItem :title="t('approval', 'Workflow KPIs')" :active="currentSection === 'kpis'" @click="currentSection = 'kpis'" />
-				</NcAppNavigation>
+				<NcAppNavigation :title="t('approval', 'Approval Center')" />
 			</template>
 
-			<div class="app-content-container">
-				<h1>{{ t('approval', 'Approval Center & KPIs') }}</h1>
-
-				<div v-if="loading">
-					<NcLoadingIcon />
-					<p>{{ t('approval', 'Loading data...') }}</p>
-				</div>
-
-				<div v-if="!loading && currentSection === 'tree'">
+			<div class="split-layout">
+				<div class="left-pane">
 					<h2>{{ t('approval', 'File Approval Status Tree') }}</h2>
 					<ApprovalFileTree
 						v-if="fileTreeWithKpis.length"
@@ -30,30 +20,8 @@
 						{{ t('approval', 'No files found in the approval system.') }}
 					</p>
 				</div>
-
-				<div v-if="!loading && currentSection === 'kpis'">
-					<h2>{{ t('approval', 'Workflow KPIs') }}</h2>
-					<table v-if="workflowKpis.length" class="kpi-table">
-						<thead>
-							<tr>
-								<th>{{ t('approval', 'Workflow') }}</th>
-								<th>{{ t('approval', 'Pending') }}</th>
-								<th>{{ t('approval', 'Approved') }}</th>
-								<th>{{ t('approval', 'Rejected') }}</th>
-							</tr>
-						</thead>
-						<tbody>
-							<tr v-for="kpi in workflowKpis" :key="kpi.rule_id">
-								<td>{{ kpi.description }}</td>
-								<td>{{ kpi.pending_count }}</td>
-								<td>{{ kpi.approved_count }}</td>
-								<td>{{ kpi.rejected_count }}</td>
-							</tr>
-						</tbody>
-					</table>
-					<p v-else>
-						{{ t('approval', 'No workflow KPI data available.') }}
-					</p>
+				<div class="right-pane">
+					<ApprovalAnalytics />
 				</div>
 			</div>
 		</NcAppContent>
@@ -66,6 +34,7 @@ import { generateUrl } from '@nextcloud/router'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import axios from '@nextcloud/axios'
 import ApprovalFileTree from '../components/ApprovalFileTree.vue'
+import ApprovalAnalytics from './ApprovalAnalytics.vue'
 import { approve, reject } from '../files/helpers.js'
 import { translate } from '@nextcloud/l10n'
 
@@ -81,6 +50,7 @@ export default {
 		NcAppNavigationItem,
 		NcLoadingIcon,
 		ApprovalFileTree,
+		ApprovalAnalytics,
 	},
 	data() {
 		return {
@@ -88,7 +58,6 @@ export default {
 			allApprovalFiles: [], // Fetched from /all-approval-files
 			workflows: [],
 			workflowKpis: [],
-			currentSection: 'tree', // Default to tree view
 			expandedFolderStates: {}, // Added for managing folder expanded states
 		}
 	},
@@ -195,8 +164,6 @@ export default {
 		// eslint-disable-next-line no-console
 		console.log('[ApprovalCenterView] mounted: after reloadData() - loading:', this.loading)
 		// eslint-disable-next-line no-console
-		console.log('[ApprovalCenterView] mounted: currentSection:', this.currentSection)
-		// eslint-disable-next-line no-console
 		console.log('[ApprovalCenterView] mounted: allApprovalFiles.length:', this.allApprovalFiles.length)
 		// eslint-disable-next-line no-console
 		console.log('[ApprovalCenterView] mounted: fileTreeWithKpis.length (computed):', this.fileTreeWithKpis.length)
@@ -225,8 +192,6 @@ export default {
 				this.loading = false
 				// eslint-disable-next-line no-console
 				console.log('[ApprovalCenterView] reloadData: finished. loading:', this.loading)
-				// eslint-disable-next-line no-console
-				console.log('[ApprovalCenterView] reloadData: currentSection:', this.currentSection)
 				// eslint-disable-next-line no-console
 				console.log('[ApprovalCenterView] reloadData: allApprovalFiles.length:', this.allApprovalFiles.length)
 				// Note: Accessing computed property here will trigger its calculation if not already cached
@@ -313,25 +278,28 @@ export default {
 </script>
 
 <style scoped lang="scss">
-.app-content-container {
-	padding: 20px;
-	height: 100%;
-	overflow-y: auto;
+.split-layout {
+	display: flex;
+	flex-direction: row;
+	gap: 24px;
 }
-
-.kpi-table {
-	width: 100%;
-	border-collapse: collapse;
-	margin-top: 20px;
-
-	th, td {
-		border: 1px solid var(--color-border);
-		padding: 8px 12px;
-		text-align: start;
-	}
-
-	th {
-		background-color: var(--color-background-hover);
-	}
+.left-pane {
+	flex: 1 1 0;
+	min-width: 320px;
+	max-width: 480px;
+	background: var(--color-main-background);
+	padding: 20px;
+	border-radius: var(--border-radius);
+	box-shadow: var(--box-shadow);
+	height: fit-content;
+}
+.right-pane {
+	flex: 2 1 0;
+	background: var(--color-main-background);
+	padding: 20px;
+	border-radius: var(--border-radius);
+	box-shadow: var(--box-shadow);
+	height: fit-content;
+	min-width: 400px;
 }
 </style>
