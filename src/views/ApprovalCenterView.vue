@@ -280,12 +280,13 @@ export default {
 	display: flex;
 	flex-direction: row;
 	gap: 24px;
+	width: 100%;
 }
 
 .left-pane {
 	flex: 1 1 0;
-	min-width: 320px;
-	max-width: 480px;
+	min-width: 220px;
+	max-width: 320px;
 	background: var(--color-main-background);
 	padding: 20px;
 	border-radius: var(--border-radius);
@@ -294,13 +295,13 @@ export default {
 }
 
 .right-pane {
-	flex: 2 1 0;
+	flex: 4 1 0;
 	background: var(--color-main-background);
 	padding: 20px;
 	border-radius: var(--border-radius);
 	box-shadow: var(--box-shadow);
 	height: fit-content;
-	overflow-x: auto;
+	/* overflow-x: auto;  No longer needed */
 }
 
 h1, h2 {
