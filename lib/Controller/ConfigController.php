@@ -21,6 +21,8 @@ use OCP\IDBConnection;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 
 class ConfigController extends Controller {
 
@@ -57,6 +59,8 @@ class ConfigController extends Controller {
 	 *
 	 * @return DataResponse
 	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
 	public function getRules(): DataResponse {
 		$circlesEnabled = $this->appManager->isEnabledForUser('circles') && class_exists(\OCA\Circles\CirclesManager::class);
 		if ($circlesEnabled) {
@@ -109,6 +113,8 @@ class ConfigController extends Controller {
 		return new DataResponse($rules);
 	}
 
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
 	public function getWorkflowKpis(): DataResponse {
 		$rules = $this->ruleService->getRules();
 		$kpis = [];
@@ -151,6 +157,8 @@ class ConfigController extends Controller {
 		return new DataResponse($kpis);
 	}
 
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
 	public function getAllApprovalFiles(): DataResponse {
 		// Step 1: Get all file_ids in approval_activity
 		$qb = $this->db->getQueryBuilder();
