@@ -279,4 +279,10 @@ class ConfigController extends Controller {
 			? new DataResponse($result, 400)
 			: new DataResponse();
 	}
+
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function testAccess(): DataResponse {
+		return new DataResponse(['ok' => true, 'user' => $this->userId]);
+	}
 }
