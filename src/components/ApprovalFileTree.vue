@@ -34,10 +34,9 @@
 </template>
 
 <script>
-import { NcButton, NcIconSvgWrapper } from '@nextcloud/vue'
+import { NcIconSvgWrapper } from '@nextcloud/vue'
 import FolderIcon from 'vue-material-design-icons/Folder.vue'
 import FolderOpenIcon from 'vue-material-design-icons/FolderOpen.vue'
-import OpenInNewIcon from 'vue-material-design-icons/OpenInNew.vue'
 import { translate } from '@nextcloud/l10n'
 
 const STATUS_PENDING = 1
@@ -47,11 +46,9 @@ const STATUS_REJECTED = 3
 export default {
 	name: 'ApprovalFileTree',
 	components: {
-		NcButton,
 		NcIconSvgWrapper,
 		FolderIcon,
 		FolderOpenIcon,
-		OpenInNewIcon,
 	},
 	props: {
 		treeData: {
