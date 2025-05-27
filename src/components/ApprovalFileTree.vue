@@ -14,20 +14,7 @@
 						({{ getRuleDescription(item.originalFile.rule_id) }})
 					</span>
 				</div>
-				<div v-if="item.type === 'file' && item.originalFile.status_code === STATUS_PENDING" class="file-actions">
-					<span>{{ item.name }}</span>
-					<span class="item-rule">({{ getRuleDescription(item.originalFile.rule_id) }})</span>
-					<NcButton
-						type="tertiary"
-						class="icon-only"
-						:aria-label="t('approval', 'View file {fileName}', { fileName: item.originalFile.file_name })"
-						@click.stop="viewFile(item.originalFile)">
-						<template #icon>
-							<OpenInNewIcon :size="20" />
-						</template>
-					</NcButton>
-				</div>
-				<div v-else-if="item.type === 'file'" class="file-status-indicator">
+				<div v-if="item.type === 'file'" class="file-row">
 					<span>{{ item.name }}</span>
 					<span class="item-rule">({{ getRuleDescription(item.originalFile.rule_id) }})</span>
 					<NcButton
@@ -155,8 +142,7 @@ export default {
 			font-weight: bold;
 		}
 
-		.file-actions,
-		.file-status-indicator {
+		.file-row {
 			display: flex;
 			align-items: center;
 			margin-inline-start: 28px;
