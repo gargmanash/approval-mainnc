@@ -15,12 +15,8 @@
 					</span>
 				</div>
 				<div v-if="item.type === 'file' && item.originalFile.status_code === STATUS_PENDING" class="file-actions">
-					<NcButton @click.stop="approveFile(item.originalFile)">
-						{{ t('approval', 'Approve') }}
-					</NcButton>
-					<NcButton type="secondary" @click.stop="rejectFile(item.originalFile)">
-						{{ t('approval', 'Reject') }}
-					</NcButton>
+					<span>{{ item.name }}</span>
+					<span class="item-rule">({{ getRuleDescription(item.originalFile.rule_id) }})</span>
 					<NcButton
 						type="tertiary"
 						class="icon-only"
@@ -32,8 +28,8 @@
 					</NcButton>
 				</div>
 				<div v-else-if="item.type === 'file'" class="file-status-indicator">
-					<span v-if="item.originalFile.status_code === STATUS_APPROVED" class="status-approved">{{ t('approval', 'Approved') }}</span>
-					<span v-else-if="item.originalFile.status_code === STATUS_REJECTED" class="status-rejected">{{ t('approval', 'Rejected') }}</span>
+					<span>{{ item.name }}</span>
+					<span class="item-rule">({{ getRuleDescription(item.originalFile.rule_id) }})</span>
 					<NcButton
 						type="tertiary"
 						class="icon-only"
