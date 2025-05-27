@@ -177,7 +177,7 @@ class ConfigController extends Controller {
 			];
 			$qb2 = $this->db->getQueryBuilder();
 			$qb2->select('new_state');
-			$qb2->addSelect($qb2->createFunction('MAX(' . $qb2->getColumnName('timestamp') . ')') . ' AS max_timestamp');
+			$qb2->addSelect($qb2->createFunction('MAX(timestamp)') . ' AS max_timestamp');
 			$qb2->from('approval_activity');
 			$qb2->where($qb2->expr()->eq('file_id', $qb2->createNamedParameter($fileId)));
 			$qb2->groupBy('new_state');
