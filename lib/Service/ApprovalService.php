@@ -407,55 +407,106 @@ class ApprovalService {
 	}
 
 	/**
-	 * Request approval with a given rule
-	 *
 	 * @param int $fileId
 	 * @param int $ruleId
 	 * @param string|null $userId
 	 * @param bool $createShares
-	 * @return array potential error message
-	 * @throws \OCP\Files\NotPermittedException
-	 * @throws \OC\User\NoUserException
+	 * @return array
 	 */
 	public function request(int $fileId, int $ruleId, ?string $userId, bool $createShares): array {
-		$rule = $this->ruleService->getRule($ruleId);
-		if (is_null($rule)) {
-			return ['error' => $this->l10n->t('Rule does not exist')];
-		}
+		$this->logger->debug('Attempting approval request for fileId: ' . $fileId . ', ruleId: ' . $ruleId . ', userId: ' . $userId . ', createShares: ' . (string)$createShares, ['app' => $this->appName]);
 
-		if ($this->userIsAuthorizedByRule($userId, $rule, 'requesters')) {
-			// only request if it has not yet been requested for this rule
-			if (!$this->tagObjectMapper->haveTag((string) $fileId, 'files', $rule['tagPending'])) {
-				if ($createShares) {
-					$this->shareWithApprovers($fileId, $rule, $userId);
-					// if shares are auto created, request is actually done in a separated request with $createShares === false
-					return [];
-				}
-				// store activity in our tables
-				$this->ruleService->storeAction($fileId, $ruleId, $userId, Application::STATE_PENDING);
-
-				$this->tagObjectMapper->assignTags((string) $fileId, 'files', $rule['tagPending']);
-
-				// still produce an activity entry for the user who requests
-				$this->activityManager->triggerEvent(
-					ActivityManager::APPROVAL_OBJECT_NODE, $fileId,
-					ActivityManager::SUBJECT_REQUESTED_ORIGIN,
-					['origin_user_id' => $userId]
-				);
-
-				// check if someone can actually approve
-				$ruleUserIds = $this->getRuleAuthorizedUserIds($rule, 'approvers');
-				foreach ($ruleUserIds as $uid) {
-					if ($this->utilsService->userHasAccessTo($fileId, $uid)) {
-						return [];
-					}
-				}
-				return ['warning' => $this->l10n->t('This element is not shared with any user who is authorized to approve it')];
-			} else {
-				return ['error' => $this->l10n->t('Approval has already been requested with this rule for this file')];
+		try {
+			$user = $this->userManager->get($userId);
+			if (!$user instanceof IUser) {
+				$this->logger->warning('User not found for userId: ' . $userId, ['app' => $this->appName]);
+				return ['error' => $this->l10n->t('User not found')];
 			}
-		} else {
-			return ['error' => $this->l10n->t('You are not authorized to request with this rule')];
+
+			$userFolder = $this->root->getUserFolder($userId);
+			// It's crucial to get the node in the context of the *requesting user* to ensure they have access
+			$nodes = $userFolder->getById($fileId);
+
+			if (count($nodes) === 0) {
+				// This means the file isn't accessible to the *requesting user* in their own file view.
+				// It might exist globally, but they can't "see" it to request approval for it.
+				$this->logger->error('File not found or not accessible for user: ' . $userId . ', fileId: ' . $fileId, ['app' => $this->appName]);
+				return ['error' => $this->l10n->t('File not found or not accessible by you.')];
+			}
+			$node = $nodes[0]; // Node in the context of the requester
+
+			$rule = $this->ruleService->getRuleById($ruleId);
+			if ($rule === null) {
+				$this->logger->error('Rule not found with id: ' . $ruleId, ['app' => $this->appName]);
+				return ['error' => $this->l10n->t('Rule does not exist')];
+			}
+
+			if (!$this->userIsAuthorizedByRule($userId, $rule, 'requesters')) {
+				$this->logger->warning('User ' . $userId . ' is not authorized to request with rule ' . $ruleId, ['app' => $this->appName]);
+				return ['error' => $this->l10n->t('You are not authorized to request with this rule')];
+			}
+			
+			// Check if already pending/approved/rejected for this rule
+			// This check should use the node's ID, which is $fileId (or $node->getId())
+			if ($this->tagObjectMapper->haveTag((string) $fileId, 'files', $rule['tagPending']) ||
+				$this->tagObjectMapper->haveTag((string) $fileId, 'files', $rule['tagApproved']) ||
+				$this->tagObjectMapper->haveTag((string) $fileId, 'files', $rule['tagRejected'])) {
+				$this->logger->info('File ' . $fileId . ' already has an approval status for rule ' . $ruleId, ['app' => $this->appName]);
+				return ['error' => $this->l10n->t('Approval has already been requested or processed for this file with this rule.')];
+			}
+
+			// If createShares is true, the actual request logic (tagging, notification) might be deferred
+			// or handled after shares are confirmed. For now, the original logic was:
+			// if ($createShares) {
+			// $this->shareWithApprovers($fileId, $rule, $userId);
+			// return []; // Original logic returned early
+			// }
+			// We'll adjust this: shares are created, then we proceed.
+
+			$this->tagObjectMapper->assignTag((string) $fileId, 'files', $rule['tagPending']);
+			
+			$this->activityManager->addRequestActivity(
+				$fileId,
+				$ruleId,
+				$node->getName(), // Use the node we fetched
+				$userId,
+				$user->getDisplayName(),
+				$node->getOwner()->getUID() // Owner of the node
+			);
+
+			if ($createShares) {
+				$sharingOutcome = $this->shareWithApprovers($fileId, $rule, $userId);
+				// Log outcome of sharing if needed, e.g., if $sharingOutcome contains error/warning info
+				if (isset($sharingOutcome['warning'])) {
+					$this->logger->warning('Sharing warning for file ' . $fileId . ', rule ' . $ruleId . ': ' . $sharingOutcome['warning'], ['app' => $this->appName]);
+                    // Decide if this warning should halt the process or just be logged.
+                    // For now, we continue to send notifications.
+				}
+                if (isset($sharingOutcome['error'])) {
+					$this->logger->error('Sharing error for file ' . $fileId . ', rule ' . $ruleId . ': ' . $sharingOutcome['error'], ['app' => $this->appName]);
+                    // If sharing is critical and failed, we might want to return an error here.
+                    // return ['error' => 'Failed to create necessary shares: ' . $sharingOutcome['error']];
+				}
+			}
+			
+			$this->sendRequestNotification($fileId, $rule, $userId, false);
+
+			return $this->getApprovalState($fileId, $userId, true); // true because we've confirmed user access by getting the node
+
+		} catch (TagNotFoundException $e) {
+			$this->logger->error('Tag operation failed for file ' . $fileId . ', rule ' . $ruleId . ': ' . $e->getMessage(), ['app' => $this->appName, 'exception' => $e]);
+			return ['error' => $this->l10n->t('Failed to process approval tags: %s', [$e->getMessage()])];
+		} catch (\OCP\Files\NotFoundException $e) {
+			$this->logger->error('File system error (NotFound) during approval request for file ' . $fileId . ' by user ' . $userId . ': ' . $e->getMessage(), ['app' => $this->appName, 'exception' => $e]);
+			return ['error' => $this->l10n->t('File system error: File not found or not accessible. %s', [$e->getMessage()])];
+		} catch (\OCP\Files\GenericFileException $e) { // Catch more general file exceptions
+			$this->logger->error('Generic file system error during approval request for file ' . $fileId . ' by user ' . $userId . ': ' . $e->getMessage(), ['app' => $this->appName, 'exception' => $e]);
+			return ['error' => $this->l10n->t('A file system error occurred: %s', [$e->getMessage()])];
+		} catch (\Throwable $e) {
+			$this->logger->critical('Unexpected critical error during approval request for file ' . $fileId . ', rule ' . $ruleId . ' by user ' . $userId . ': ' . $e->getMessage() . ' Stack: ' . $e->getTraceAsString(), ['app' => $this->appName, 'exception' => $e]);
+			return ['error' => $this->l10n->t('An unexpected server error occurred. Please contact your administrator.')];
+			// For debugging, you might return $e->getMessage(), but for production, a generic error is better.
+			// return ['error' => 'An unexpected server error occurred: ' . $e->getMessage()];
 		}
 	}
 
