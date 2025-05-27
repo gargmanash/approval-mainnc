@@ -2,19 +2,15 @@
 	<div class="approval-file-tree">
 		<ul class="tree-level">
 			<li v-for="item in treeData" :key="item.path" :class="{'is-folder': item.type === 'folder'}">
-				<div class="tree-item-label" @click="toggleFolder(item)">
-					<FolderOpenIcon v-if="item.type === 'folder' && item.expanded" :size="20" />
-					<FolderIcon v-else-if="item.type === 'folder' && !item.expanded" :size="20" />
-					<NcIconSvgWrapper v-else :icon="getMimeIcon(item.originalFile.mimetype)" :size="20" />
+				<div v-if="item.type === 'folder'" class="tree-item-label" @click="toggleFolder(item)">
+					<FolderOpenIcon v-if="item.expanded" :size="20" />
+					<FolderIcon v-else :size="20" />
 					<span class="item-name">{{ item.name }}</span>
-					<span v-if="item.type === 'folder' && item.kpis" class="folder-kpis">
+					<span v-if="item.kpis" class="folder-kpis">
 						(P: {{ item.kpis.pending }}, A: {{ item.kpis.approved }}, R: {{ item.kpis.rejected }})
 					</span>
-					<span v-else-if="item.type === 'file'" class="item-rule">
-						({{ getRuleDescription(item.originalFile.rule_id) }})
-					</span>
 				</div>
-				<div v-if="item.type === 'file'" class="file-row">
+				<div v-else-if="item.type === 'file'" class="file-row">
 					<span>{{ item.name }}</span>
 					<span class="item-rule">({{ getRuleDescription(item.originalFile.rule_id) }})</span>
 				</div>

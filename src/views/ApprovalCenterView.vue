@@ -10,7 +10,6 @@
 
 			<div class="app-content-container">
 				<h1>{{ t('approval', 'Approval Center & KPIs') }}</h1>
-				<p><i>Static content test: If you see this, the ApprovalCenterView component is rendering.</i></p>
 
 				<div v-if="loading">
 					<NcLoadingIcon />
