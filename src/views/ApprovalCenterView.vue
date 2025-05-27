@@ -29,7 +29,7 @@
 </template>
 
 <script>
-import { NcAppContent, NcAppNavigation, NcAppNavigationItem, NcLoadingIcon } from '@nextcloud/vue'
+import { NcAppContent, NcAppNavigation } from '@nextcloud/vue'
 import { generateUrl } from '@nextcloud/router'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import axios from '@nextcloud/axios'
@@ -47,8 +47,6 @@ export default {
 	components: {
 		NcAppContent,
 		NcAppNavigation,
-		NcAppNavigationItem,
-		NcLoadingIcon,
 		ApprovalFileTree,
 		ApprovalAnalytics,
 	},
@@ -283,6 +281,7 @@ export default {
 	flex-direction: row;
 	gap: 24px;
 }
+
 .left-pane {
 	flex: 1 1 0;
 	min-width: 320px;
@@ -293,6 +292,7 @@ export default {
 	box-shadow: var(--box-shadow);
 	height: fit-content;
 }
+
 .right-pane {
 	flex: 2 1 0;
 	background: var(--color-main-background);
@@ -301,5 +301,13 @@ export default {
 	box-shadow: var(--box-shadow);
 	height: fit-content;
 	min-width: 400px;
+}
+
+h1, h2 {
+	color: var(--color-main-text);
+}
+
+p {
+	color: var(--color-text-maxcontrast);
 }
 </style>
