@@ -23,6 +23,7 @@ use OCP\Files\NotFoundException;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
+use OCP\ILogger;
 
 class ConfigController extends Controller {
 
@@ -35,9 +36,17 @@ class ConfigController extends Controller {
 		private UtilsService $utilsService,
 		private ?string $userId,
 		private IDBConnection $db,
-		private IRootFolder $rootFolder
+		private IRootFolder $rootFolder,
+		ILogger $logger
 	) {
 		parent::__construct($appName, $request);
+		$this->logger = $logger;
+	}
+
+	private function logUserContext($method) {
+		$user = $this->userManager->get($this->userId);
+		$isAdmin = $user ? ($user->isAdmin() ? 'yes' : 'no') : 'null';
+		$this->logger->info("[Approval] $method called by userId={$this->userId}, isAdmin={$isAdmin}");
 	}
 
 	/**
@@ -62,6 +71,7 @@ class ConfigController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function getRules(): DataResponse {
+		$this->logUserContext('getRules');
 		$circlesEnabled = $this->appManager->isEnabledForUser('circles') && class_exists(\OCA\Circles\CirclesManager::class);
 		if ($circlesEnabled) {
 			$circlesManager = \OC::$server->get(\OCA\Circles\CirclesManager::class);
@@ -116,6 +126,7 @@ class ConfigController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function getWorkflowKpis(): DataResponse {
+		$this->logUserContext('getWorkflowKpis');
 		$rules = $this->ruleService->getRules();
 		$kpis = [];
 
@@ -160,6 +171,7 @@ class ConfigController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function getAllApprovalFiles(): DataResponse {
+		$this->logUserContext('getAllApprovalFiles');
 		// Step 1: Get all file_ids in approval_activity
 		$qb = $this->db->getQueryBuilder();
 		$qb->selectDistinct('file_id')
