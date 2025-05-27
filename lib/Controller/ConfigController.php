@@ -182,7 +182,9 @@ class ConfigController extends Controller {
 				->groupBy('new_state');
 			$stmt2 = $qb2->execute();
 			while ($row2 = $stmt2->fetch()) {
-				$statusTimestamps[(int)$row2['new_state']] = (int)$row2['max_timestamp'];
+				if (isset($row2['new_state']) && isset($row2['max_timestamp'])) {
+					$statusTimestamps[(int)$row2['new_state']] = (int)$row2['max_timestamp'];
+				}
 			}
 			$stmt2->closeCursor();
 
@@ -213,6 +215,10 @@ class ConfigController extends Controller {
 				}
 			} catch (NotFoundException $e) {
 				// File might have been deleted, skip it
+				continue;
+			} catch (\Throwable $e) {
+				// Log and skip any other error
+				continue;
 			}
 		}
 
