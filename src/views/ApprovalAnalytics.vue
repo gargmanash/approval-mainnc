@@ -110,12 +110,13 @@ export default {
 
 .analytics-table {
 	width: 100%;
+	min-width: 900px;
 	border-collapse: collapse;
 	margin-top: 20px;
 
 	th, td {
 		border: 1px solid var(--color-border);
-		padding: 8px 12px;
+		padding: 6px 8px;
 		text-align: start;
 	}
 

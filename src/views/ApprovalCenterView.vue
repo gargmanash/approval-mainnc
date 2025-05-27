@@ -300,7 +300,7 @@ export default {
 	border-radius: var(--border-radius);
 	box-shadow: var(--box-shadow);
 	height: fit-content;
-	min-width: 400px;
+	overflow-x: auto;
 }
 
 h1, h2 {
