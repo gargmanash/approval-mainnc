@@ -466,7 +466,7 @@ class ApprovalService {
 			// }
 			// We'll adjust this: shares are created, then we proceed.
 
-			$this->tagObjectMapper->assignTag((string) $fileId, 'files', $rule['tagPending']);
+			$this->tagObjectMapper->assignTags((string) $fileId, 'files', $rule['tagPending']);
 			
 			$this->activityManager->addRequestActivity(
 				$fileId,
