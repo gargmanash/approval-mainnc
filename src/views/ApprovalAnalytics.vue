@@ -7,28 +7,34 @@
 			</p>
 		</div>
 		<div v-else>
-			<table v-if="allApprovalFiles.length" class="analytics-table">
-				<thead>
-					<tr>
-						<th>{{ t('approval', 'File Name') }}</th>
-						<th>{{ t('approval', 'Rule Description') }}</th>
-						<th>{{ t('approval', 'Status') }}</th>
-						<th>{{ t('approval', 'Sent At') }}</th>
-						<th>{{ t('approval', 'Approved At') }}</th>
-						<th>{{ t('approval', 'Rejected At') }}</th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr v-for="file in allApprovalFiles" :key="file.file_id">
-						<td>{{ getFileName(file.path) }}</td>
-						<td>{{ getRuleDescription(file.rule_id) }}</td>
-						<td>{{ getStatusLabel(file.status_code) }}</td>
-						<td>{{ formatTimestamp(file.sent_at) }}</td>
-						<td>{{ formatTimestamp(file.approved_at) }}</td>
-						<td>{{ formatTimestamp(file.rejected_at) }}</td>
-					</tr>
-				</tbody>
-			</table>
+			<div v-if="Object.keys(filesGroupedByWorkflow).length">
+				<div v-for="(files, workflowName) in filesGroupedByWorkflow" :key="workflowName" class="workflow-group">
+					<h2>{{ workflowName }}</h2>
+					<table v-if="files.length" class="analytics-table">
+						<thead>
+							<tr>
+								<th>{{ t('approval', 'File Name') }}</th>
+								<th>{{ t('approval', 'Status') }}</th>
+								<th>{{ t('approval', 'Sent At') }}</th>
+								<th>{{ t('approval', 'Approved At') }}</th>
+								<th>{{ t('approval', 'Rejected At') }}</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr v-for="file in files" :key="file.id + '-' + file.rule_id">
+								<td>{{ getFileName(file.path) }}</td>
+								<td>{{ getStatusLabel(file.status_code) }}</td>
+								<td>{{ formatTimestamp(file.sent_at) }}</td>
+								<td>{{ formatTimestamp(file.approved_at) }}</td>
+								<td>{{ formatTimestamp(file.rejected_at) }}</td>
+							</tr>
+						</tbody>
+					</table>
+					<p v-else>
+						{{ t('approval', 'No approval files found for this workflow.') }}
+					</p>
+				</div>
+			</div>
 			<p v-else>
 				{{ t('approval', 'No approval files found.') }}
 			</p>
@@ -47,9 +53,22 @@ export default {
 		return {
 			t,
 			allApprovalFiles: [],
-			rules: [],
+			rules: {},
 			loading: false,
 		}
+	},
+	computed: {
+		filesGroupedByWorkflow() {
+			const grouped = {}
+			this.allApprovalFiles.forEach(file => {
+				const ruleDescription = this.getRuleDescription(file.rule_id)
+				if (!grouped[ruleDescription]) {
+					grouped[ruleDescription] = []
+				}
+				grouped[ruleDescription].push(file)
+			})
+			return grouped
+		},
 	},
 	async mounted() {
 		this.loading = true
@@ -72,7 +91,10 @@ export default {
 		async fetchRules() {
 			try {
 				const response = await axios.get(generateUrl('/apps/approval/rules'))
-				this.rules = response.data ? Object.values(response.data) : []
+				this.rules = (response.data || []).reduce((acc, rule) => {
+					acc[rule.id] = rule
+					return acc
+				}, {})
 			} catch (e) {
 				console.error('Error fetching rules:', e)
 			}
@@ -83,8 +105,8 @@ export default {
 			return parts[parts.length - 1]
 		},
 		getRuleDescription(ruleId) {
-			const rule = this.rules.find(r => r.id === ruleId)
-			return rule ? rule.description : ruleId
+			const rule = this.rules[ruleId]
+			return rule ? rule.description : t('approval', 'Workflow') + ' ' + ruleId
 		},
 		getStatusLabel(status) {
 			switch (status) {
@@ -110,9 +132,9 @@ export default {
 
 .analytics-table {
 	width: 100%;
-	min-width: 900px;
 	border-collapse: collapse;
-	margin-top: 20px;
+	margin-top: 10px;
+	margin-bottom: 30px;
 
 	th, td {
 		border: 1px solid var(--color-border);
@@ -123,6 +145,13 @@ export default {
 	th {
 		background-color: var(--color-background-hover);
 	}
+}
+
+.workflow-group h2 {
+	margin-top: 20px;
+	margin-bottom: 10px;
+	border-bottom: 1px solid var(--color-border);
+	padding-bottom: 5px;
 }
 
 h1, h2 {
