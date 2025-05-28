@@ -32,6 +32,8 @@ use Sabre\DAV\PropFind;
 
 class ApprovalService {
 
+	private string $appName;
+
 	public function __construct(
 		string $appName,
 		private ISystemTagObjectMapper $tagObjectMapper,
@@ -47,6 +49,7 @@ class ApprovalService {
 		private IL10N $l10n,
 		private LoggerInterface $logger,
 		private ?string $userId) {
+		$this->appName = $appName;
 	}
 
 	/**
@@ -435,7 +438,7 @@ class ApprovalService {
 			}
 			$node = $nodes[0]; // Node in the context of the requester
 
-			$rule = $this->ruleService->getRuleById($ruleId);
+			$rule = $this->ruleService->getRule($ruleId);
 			if ($rule === null) {
 				$this->logger->error('Rule not found with id: ' . $ruleId, ['app' => $this->appName]);
 				return ['error' => $this->l10n->t('Rule does not exist')];
