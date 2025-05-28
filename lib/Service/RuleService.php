@@ -232,7 +232,7 @@ class RuleService {
 			]);
 		$qb->executeStatement();
 
-		$insertedRuleId = $this->db->getLastInsertId();
+		$insertedRuleId = $this->db->lastInsertId('approval_rules_id_seq');
 
 		foreach ($approvers as $elem) {
 			$qb = $this->db->getQueryBuilder();
