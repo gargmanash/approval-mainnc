@@ -82,9 +82,6 @@ class UtilsService {
 	public function createShare(Node $node, int $type, string $sharedWith, string $sharedBy, string $label, ?string $originalRelativePath = null): bool {
 		$share = $this->shareManager->newShare();
 		$share->setNode($node)
-			// share permission is not necessary for rule chaining
-			// because we get the file from its owner's storage so we can share it whatsoever
-			// ->setPermissions(Constants::PERMISSION_READ | Constants::PERMISSION_SHARE)
 			->setPermissions(Constants::PERMISSION_READ)
 			->setSharedWith($sharedWith)
 			->setShareType($type)
@@ -92,31 +89,24 @@ class UtilsService {
 			->setMailSend(false)
 			->setExpirationDate(null);
 
-		$finalTargetPathSuffix = $node->getName(); // Default to just the node name
-		if ($originalRelativePath !== null && $originalRelativePath !== '') {
-			// If a valid originalRelativePath is provided (could be 'file.txt' or 'folderA/file.txt'), use it.
-			$finalTargetPathSuffix = $originalRelativePath;
-		}
-		$share->setTargetPath('Shared/' . $finalTargetPathSuffix);
+		// DO NOT attempt $share->setTargetPath(...) here as it's an invalid method for a new share object.
+		// The system will place the share in the recipient's 'Shared' folder by default.
+		// $originalRelativePath is kept as a parameter in case future Nextcloud APIs allow influencing this,
+		// or for logging/notification purposes. For now, it does not set the hierarchical path.
 
 		try {
 			$share = $this->shareManager->createShare($share);
+			// After creation, update the share with label, note, and status
 			$share->setLabel($label)
-				->setNote($label)
-				->setMailSend(false)
+				->setNote($label) // You could potentially put $originalRelativePath in the note for user info
+				->setMailSend(false) // mail send status can also be set on an existing share
 				->setStatus(IShare::STATUS_ACCEPTED);
 			$this->shareManager->updateShare($share);
-			// $share = $this->shareManager->updateShare($share);
-			//// this was done instead of ->setStatus() but it does not seem to work all the time
-			//if ($type === IShare::TYPE_USER) {
-			//	try {
-			//		$this->shareManager->acceptShare($share, $sharedWith);
-			//	} catch (\Throwable | \Exception $e) {
-			//		$this->logger->warning('Approval sharing error : '.$e->getMessage(), ['app' => $this->appName]);
-			//	}
-			//}
 			return true;
 		} catch (Exception $e) {
+			// Consider logging the exception message: $e->getMessage()
+			// e.g., $this->logger->error('Failed to create or update share: ' . $e->getMessage(), ['app' => Application::APP_ID, 'exception' => $e]);
+			// Ensure you have a logger injected if you use $this->logger
 			return false;
 		}
 	}
@@ -197,6 +187,53 @@ class UtilsService {
 			return ['success' => true];
 		} catch (TagNotFoundException $e) {
 			return ['error' => 'Tag not found'];
+		}
+	}
+
+	/**
+	 * Ensures a given folder hierarchy exists for a user.
+	 *
+	 * @param string $userId The ID of the user.
+	 * @param string $relativePath The desired relative path from the user's root (e.g., "Shared/MySubFolder/AnotherLevel").
+	 * @return \\OCP\\Files\\Folder|null The final folder node if successful, null otherwise.
+	 */
+	public function ensureFolderHierarchy(string $userId, string $relativePath): ?\\OCP\\Files\\Folder {
+		try {
+			$userFolder = $this->root->getUserFolder($userId);
+			if (!$userFolder) {
+				// Log error: Unable to get user folder for $userId
+				return null;
+			}
+
+			$currentPath = '';
+			$parts = explode('/', trim($relativePath, '/'));
+			$folder = $userFolder;
+
+			foreach ($parts as $part) {
+				if (empty($part)) {
+					continue;
+				}
+				$currentPath .= ($currentPath === '' ? '' : '/') . $part;
+				$node = $userFolder->get($currentPath);
+				if ($node instanceof \\OCP\\Files\\Folder) {
+					$folder = $node;
+				} elseif ($node === null) { // Path does not exist, try to create folder
+					$folder = $userFolder->newFolder($currentPath);
+				} else { // Path exists but is not a folder
+					// Log error: Path $currentPath exists but is not a folder for user $userId
+					return null;
+				}
+			}
+			return $folder; // Returns the deepest folder in the hierarchy
+		} catch (\\OCP\\Files\\NotPermittedException $e) {
+			// Log error: Permission denied creating folder hierarchy for $userId at $relativePath
+			return null;
+		} catch (\\OCP\\Files\\StorageNotAvailableException $e) {
+			// Log error: Storage not available for $userId
+			return null;
+		} catch (Exception $e) {
+			// Log general error: $e->getMessage()
+			return null;
 		}
 	}
 }
