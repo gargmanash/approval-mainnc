@@ -545,95 +545,75 @@ class ApprovalService {
 	}
 
 	/**
-	 * Share file with everybody who can approve with given rule and have no access yet
+	 * Share file with everybody who can approve with given rule.
+	 * This is a simplified revert version.
 	 *
 	 * @param int $fileId
 	 * @param array $rule
-	 * @param string $userId
-	 * @return array list of created shares
-	 * @throws \OCP\Files\NotPermittedException
-	 * @throws \OC\User\NoUserException
+	 * @param string $userId The ID of the user initiating the request (requester)
+	 * @return array List of shares that were attempted/created (can be empty)
 	 */
 	private function shareWithApprovers(int $fileId, array $rule, string $userId): array {
 		$createdShares = [];
-		// get node for basic info, and then again from owner for sharing
-		$userFolder = $this->root->getUserFolder($userId); // Requesting user's folder
-		$requestUserNodeResults = $userFolder->getById($fileId);
-		if (count($requestUserNodeResults) === 0) {
-			$this->logger->error('Share_SA: Node with fileId ' . $fileId . ' not found or accessible for requesting user ' . $userId, ['app' => $this->appName]);
-			return ['error' => 'Original file not found for requester.'];
-		}
-		$nodeForInfo = $requestUserNodeResults[0];
-		$fileOwnerId = $nodeForInfo->getOwner()->getUID();
+		$this->logger->debug('Reverted_Share_SA: Attempting to share fileId: ' . $fileId . ' for rule: ' . $rule['id'] . ' by user: ' . $userId, ['app' => $this->appName]);
 
-		// Get the node from the actual owner's context for creating the share
-		$ownerFolder = $this->root->getUserFolder($fileOwnerId);
-		$ownerNodeResults = $ownerFolder->getById($fileId);
-		if (count($ownerNodeResults) === 0) {
-			$this->logger->error('Share_SA: Node with fileId ' . $fileId . ' not found in owner \'' . $fileOwnerId . '\'s context.', ['app' => $this->appName]);
-			return ['error' => 'Original file not found for owner.'];
-		}
-		$nodeToShare = $ownerNodeResults[0];
+		// First, get the node using the requester's context to ensure they have access to request approval for it.
+		$requesterUserFolder = $this->root->getUserFolder($userId);
+		$nodeResultsRequester = $requesterUserFolder->getById($fileId);
 
-		$originalRelativePathWithFile = $ownerFolder->getRelativePath($nodeToShare->getPath());
-		if (str_starts_with($originalRelativePathWithFile, '/')) {
-			$originalRelativePathWithFile = substr($originalRelativePathWithFile, 1);
+		if (count($nodeResultsRequester) === 0) {
+			$this->logger->error('Reverted_Share_SA: Node with fileId ' . $fileId . ' not found or not accessible for requesting user ' . $userId, ['app' => $this->appName]);
+			return ['error' => 'File not found by requester, cannot initiate sharing for approval.'];
 		}
-		// Path for hierarchy creation (e.g., "Shared/folder1/folder1a" if original is "folder1/folder1a/file.txt")
-		$baseHierarchyPathForApprover = 'Shared/';
-		$pathSegmentsOnly = dirname($originalRelativePathWithFile);
-		if ($pathSegmentsOnly !== '' && $pathSegmentsOnly !== '.') {
-			$baseHierarchyPathForApprover .= $pathSegmentsOnly;
-		} else {
-		    // If dirname is empty or '.', it means the file is in the root of the owner's files.
-            // In this case, we don't create extra subfolders under Shared, beyond 'Shared' itself.
-            // The ensureFolderHierarchy will just ensure 'Shared' exists.
-            // If originalRelativePathWithFile was just 'file.txt', dirname is '.', baseHierarchyPathForApprover remains 'Shared/'
+		$nodeForSharing = $nodeResultsRequester[0]; // This is the node we intend to share.
+		$fileOwnerId = $nodeForSharing->getOwner()->getUID();
+
+		// It's generally best practice for shares to be created by the actual owner of the file.
+		// If the requester is not the owner, get the node again from the owner's perspective.
+		if ($userId !== $fileOwnerId) {
+			$ownerUserFolder = $this->root->getUserFolder($fileOwnerId);
+			$nodeResultsOwner = $ownerUserFolder->getById($fileId);
+			if (count($nodeResultsOwner) === 0) {
+				$this->logger->error('Reverted_Share_SA: Node with fileId ' . $fileId . ' not found in owner \'' . $fileOwnerId . '\'s context. Cannot create share as owner.', ['app' => $this->appName]);
+				// Fallback: attempt to share the node instance we got from the requester. This might fail if permissions are insufficient.
+				$this->logger->warning('Reverted_Share_SA: Proceeding to share node from requester\'s context due to owner context failure.', ['app' => $this->appName]);
+			} else {
+				$nodeForSharing = $nodeResultsOwner[0]; // Prefer the owner's node instance for sharing.
+			}
 		}
 
 		$label = $this->l10n->t('Please check my approval request');
 
-		foreach ($rule['approvers'] as $approver) {
-			$approverId = $approver['entityId'];
+		foreach ($rule['approvers'] as $approverDetails) {
+			$approverEntityId = $approverDetails['entityId'];
+			$approverType = $approverDetails['type'];
 			$shareType = null;
 
-			if ($approver['type'] === 'user') {
+			if ($approverType === 'user') {
 				$shareType = IShare::TYPE_USER;
-			} elseif ($this->shareManager->allowGroupSharing() && $approver['type'] === 'group') {
+			} elseif ($approverType === 'group' && $this->shareManager->allowGroupSharing()) {
 				$shareType = IShare::TYPE_GROUP;
-			} elseif ($this->appManager->isEnabledForUser('circles') && class_exists(\\OCA\\Circles\\CirclesManager::class) && $approver['type'] === 'circle') {
+			} elseif ($approverType === 'circle' && $this->appManager->isEnabledForUser('circles') && class_exists(\\OCA\\Circles\\CirclesManager::class)) {
 				$shareType = IShare::TYPE_CIRCLE;
 			}
 
 			if ($shareType !== null) {
-				// Ensure target hierarchy exists for the approver
-				// Ensure baseHierarchyPathForApprover is not just 'Shared/' if pathSegmentsOnly was '.' or empty
-                // If pathSegmentsOnly was '.', baseHierarchyPathForApprover will be 'Shared/'.
-                // If it was a path like 'foo', it will be 'Shared/foo'.
-                $actualHierarchyToCreate = rtrim($baseHierarchyPathForApprover, '/');
-                if (!empty($actualHierarchyToCreate) && $actualHierarchyToCreate !== 'Shared') {
-                    $this->utilsService->ensureFolderHierarchy($approverId, $actualHierarchyToCreate);
-                } else {
-                     // If the file is in the root, we just ensure 'Shared' exists (or rely on Nextcloud to handle it)
-                     // For simplicity, we can also call ensureFolderHierarchy with just 'Shared'
-                    $this->utilsService->ensureFolderHierarchy($approverId, 'Shared');
-                }
-
-				// For user shares, we can check if they already have access to avoid re-sharing
-				// For groups/circles, this check is more complex and usually shares are created regardless.
-				$shouldCreateShare = true;
-				if ($shareType === IShare::TYPE_USER && $this->utilsService->userHasAccessTo($fileId, $approverId)) {
-					// Optionally, log that user already has access if not re-sharing.
-					// $shouldCreateShare = false; // Decide if re-sharing to existing access is desired.
-					// For now, let's assume we always attempt the share creation as the note/label might be important.
+				// Basic check: don't re-share to a user if they already have access.
+				// This can be made more sophisticated if needed.
+				if ($shareType === IShare::TYPE_USER && $this->utilsService->userHasAccessTo($fileId, $approverEntityId)) {
+					$this->logger->info('Reverted_Share_SA: User ' . $approverEntityId . ' already has access to fileId ' . $fileId . '. Skipping duplicate share creation.', ['app' => $this->appName]);
+					// We might still want to record that a share attempt was made or would have been made.
+					// For now, just skip actual share creation to be safe.
+					// $createdShares[] = $approverDetails; // Add to indicate it was processed, even if not shared anew.
+					continue; // Skip to next approver
 				}
 
-				if ($shouldCreateShare) {
-					if ($this->utilsService->createShare($nodeToShare, $shareType, $approverId, $fileOwnerId, $label, $originalRelativePathWithFile)) {
-						$createdShares[] = $approver; 
-					} else {
-						$this->logger->warning('Share_SA: Failed to create share for ' . $approver['type'] . ' ' . $approverId . ' for fileId ' . $fileId, ['app' => $this->appName]);
-					}
+				// Call the simplified createShare from UtilsService, using $fileOwnerId as the one performing the share action.
+				if ($this->utilsService->createShare($nodeForSharing, $shareType, $approverEntityId, $fileOwnerId, $label)) {
+					$createdShares[] = $approverDetails;
+					$this->logger->debug('Reverted_Share_SA: Successfully created share for ' . $approverType . ' ' . $approverEntityId . ' for fileId ' . $fileId, ['app' => $this->appName]);
+				} else {
+					$this->logger->warning('Reverted_Share_SA: Failed to create share for ' . $approverType . ' ' . $approverEntityId . ' for fileId ' . $fileId, ['app' => $this->appName]);
 				}
 			}
 		}

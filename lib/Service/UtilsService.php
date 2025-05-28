@@ -31,14 +31,14 @@ class UtilsService {
 	 * Service providing storage, circles and tags tools
 	 */
 	public function __construct(
-		string $appName, // Keep appName if other methods use it, or remove if only for logger
+		// string $appName, // Only if used by other methods or a logger
 		private IUserManager $userManager,
 		private IShareManager $shareManager,
 		private IRootFolder $root,
 		private ISystemTagManager $tagManager,
 		private IConfig $config,
 		private ICrypto $crypto
-		// private LoggerInterface $logger // Inject logger if used
+		// private LoggerInterface $logger // Inject if logging is added back
 	) {
 	}
 
@@ -72,17 +72,9 @@ class UtilsService {
 	}
 
 	/**
-	 * Create one share
-	 *
-	 * @param Node $node
-	 * @param int $type
-	 * @param string $sharedWith
-	 * @param string $sharedBy
-	 * @param string $label
-	 * @param string|null $originalRelativePath (Kept for context, does not set hierarchy)
-	 * @return bool success
+	 * Create one basic share.
 	 */
-	public function createShare(Node $node, int $type, string $sharedWith, string $sharedBy, string $label, ?string $originalRelativePath = null): bool {
+	public function createShare(Node $node, int $type, string $sharedWith, string $sharedBy, string $label): bool {
 		$share = $this->shareManager->newShare();
 		$share->setNode($node)
 			->setPermissions(Constants::PERMISSION_READ)
@@ -92,18 +84,16 @@ class UtilsService {
 			->setMailSend(false)
 			->setExpirationDate(null);
 
-		// Ensure no setTargetPath call is present
-		// Hierarchical path creation is handled outside this basic share creation utility
-
 		try {
 			$share = $this->shareManager->createShare($share);
 			$share->setLabel($label)
-				->setNote($label) 
+				->setNote($label)
 				->setMailSend(false)
 				->setStatus(IShare::STATUS_ACCEPTED);
 			$this->shareManager->updateShare($share);
 			return true;
 		} catch (Exception $e) {
+			// If logger was injected:
 			// $this->logger->error('Failed to create or update share: ' . $e->getMessage(), ['app' => Application::APP_ID, 'exception' => $e]);
 			return false;
 		}
@@ -117,6 +107,9 @@ class UtilsService {
 	 * @return bool
 	 */
 	public function isUserInCircle(string $userId, string $circleId): bool {
+		if (!class_exists(\OCA\Circles\CirclesManager::class)) {
+			return false;
+		}
 		$circlesManager = \OC::$server->get(\OCA\Circles\CirclesManager::class);
 		$circlesManager->startSuperSession();
 		try {
@@ -125,16 +118,13 @@ class UtilsService {
 			$circlesManager->stopSession();
 			return false;
 		}
-		// is the circle owner
 		$owner = $circle->getOwner();
-		// the owner is also a member so this might be useless...
 		if ($owner->getUserType() === 1 && $owner->getUserId() === $userId) {
 			$circlesManager->stopSession();
 			return true;
 		} else {
 			$members = $circle->getMembers();
 			foreach ($members as $m) {
-				// is member of this circle
 				if ($m->getUserType() === 1 && $m->getUserId() === $userId) {
 					$circlesManager->stopSession();
 					return true;
@@ -153,6 +143,9 @@ class UtilsService {
 	 * @return bool
 	 */
 	public function userHasAccessTo(int $fileId, ?string $userId): bool {
+		if ($userId === null) {
+			return false;
+		}
 		$user = $this->userManager->get($userId);
 		if ($user instanceof IUser) {
 			$userFolder = $this->root->getUserFolder($userId);
@@ -187,5 +180,4 @@ class UtilsService {
 			return ['error' => 'Tag not found'];
 		}
 	}
-	// Ensure ensureFolderHierarchy is REMOVED
 }
