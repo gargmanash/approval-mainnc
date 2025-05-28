@@ -48,7 +48,7 @@
 						<tbody>
 							<tr v-for="file in files" :key="file.file_id + '-' + file.rule_id">
 								<td>{{ getFileName(file.path) }}</td>
-								<td>{{ file.path }}</td>
+								<td>{{ getDisplayPath(file.path) }}</td>
 								<td>{{ getStatusLabel(file.status_code) }}</td>
 								<td>{{ formatTimestamp(file.sent_at) }}</td>
 								<td>{{ formatTimestamp(file.status_code === 2 ? file.approved_at : null) }}</td>
@@ -139,6 +139,12 @@ export default {
 			if (!path) return ''
 			const parts = path.split('/')
 			return parts[parts.length - 1]
+		},
+		getDisplayPath(path) {
+			if (!path) return ''
+			// Remove the leading /username/files/ part
+			// e.g., /manas/files/Shared/doc.txt -> Shared/doc.txt
+			return path.replace(/^\/[^/]+\/files\//, '')
 		},
 		getRuleDescription(ruleId) {
 			const rule = this.rules[ruleId]
