@@ -49,4 +49,14 @@ and can be installed with [this app](https://apps.nextcloud.com/apps/integration
 			<provider>OCA\Approval\Activity\ApprovalProvider</provider>
 		</providers>
 	</activity>
+
+	<navigations>
+		<navigation>
+			<id>approval</id>
+			<name>Approval Center</name>
+			<route>approval.page.approvalCenter</route>
+			<icon>approval.svg</icon>
+			<order>20</order>
+		</navigation>
+	</navigations>
 </info>
