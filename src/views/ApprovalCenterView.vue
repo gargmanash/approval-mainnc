@@ -21,7 +21,7 @@
 					</p>
 				</div>
 				<div class="right-pane">
-					<ApprovalAnalytics />
+					<ApprovalAnalytics :workflow-kpis="workflowKpis" />
 				</div>
 			</div>
 		</NcAppContent>

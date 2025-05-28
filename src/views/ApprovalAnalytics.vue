@@ -1,6 +1,30 @@
 <template>
 	<div id="approval-analytics-page">
 		<h1>{{ t('approval', 'Approval Analytics') }}</h1>
+
+		<!-- Workflow KPIs Summary Table -->
+		<div v-if="workflowKpis && workflowKpis.length" class="workflow-kpi-summary">
+			<h2>{{ t('approval', 'Workflow Summary') }}</h2>
+			<table class="analytics-table summary-table">
+				<thead>
+					<tr>
+						<th>{{ t('approval', 'Workflow Description') }}</th>
+						<th>{{ t('approval', 'Pending') }}</th>
+						<th>{{ t('approval', 'Approved') }}</th>
+						<th>{{ t('approval', 'Rejected') }}</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr v-for="kpi in workflowKpis" :key="kpi.rule_id">
+						<td>{{ kpi.description }}</td>
+						<td>{{ kpi.pending_count }}</td>
+						<td>{{ kpi.approved_count }}</td>
+						<td>{{ kpi.rejected_count }}</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+
 		<div v-if="loading">
 			<p>
 				{{ t('approval', 'Loading data...') }}
@@ -49,6 +73,12 @@ import { generateUrl } from '@nextcloud/router'
 
 export default {
 	name: 'ApprovalAnalytics',
+	props: {
+		workflowKpis: {
+			type: Array,
+			default: () => [],
+		},
+	},
 	data() {
 		return {
 			t,
@@ -149,6 +179,15 @@ export default {
 	th {
 		background-color: var(--color-background-hover);
 	}
+}
+
+.summary-table th,
+.summary-table td {
+	text-align: center;
+}
+.summary-table th:first-child,
+.summary-table td:first-child {
+	text-align: left;
 }
 
 .workflow-group h2 {
