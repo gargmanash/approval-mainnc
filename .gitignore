@@ -16,6 +16,3 @@ notes-main/
 approval-old/
 nextcloud.sql
 server-master/
-
-# Log files
-errorlog.txt

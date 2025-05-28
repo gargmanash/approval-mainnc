@@ -32,8 +32,6 @@ use Sabre\DAV\PropFind;
 
 class ApprovalService {
 
-	private string $appName;
-
 	public function __construct(
 		string $appName,
 		private ISystemTagObjectMapper $tagObjectMapper,
@@ -49,7 +47,6 @@ class ApprovalService {
 		private IL10N $l10n,
 		private LoggerInterface $logger,
 		private ?string $userId) {
-		$this->appName = $appName;
 	}
 
 	/**
@@ -410,106 +407,55 @@ class ApprovalService {
 	}
 
 	/**
+	 * Request approval with a given rule
+	 *
 	 * @param int $fileId
 	 * @param int $ruleId
 	 * @param string|null $userId
 	 * @param bool $createShares
-	 * @return array
+	 * @return array potential error message
+	 * @throws \OCP\Files\NotPermittedException
+	 * @throws \OC\User\NoUserException
 	 */
 	public function request(int $fileId, int $ruleId, ?string $userId, bool $createShares): array {
-		$this->logger->debug('Attempting approval request for fileId: ' . $fileId . ', ruleId: ' . $ruleId . ', userId: ' . $userId . ', createShares: ' . (string)$createShares, ['app' => $this->appName]);
+		$rule = $this->ruleService->getRule($ruleId);
+		if (is_null($rule)) {
+			return ['error' => $this->l10n->t('Rule does not exist')];
+		}
 
-		try {
-			$user = $this->userManager->get($userId);
-			if (!$user instanceof IUser) {
-				$this->logger->warning('User not found for userId: ' . $userId, ['app' => $this->appName]);
-				return ['error' => $this->l10n->t('User not found')];
-			}
-
-			$userFolder = $this->root->getUserFolder($userId);
-			// It's crucial to get the node in the context of the *requesting user* to ensure they have access
-			$nodes = $userFolder->getById($fileId);
-
-			if (count($nodes) === 0) {
-				// This means the file isn't accessible to the *requesting user* in their own file view.
-				// It might exist globally, but they can't "see" it to request approval for it.
-				$this->logger->error('File not found or not accessible for user: ' . $userId . ', fileId: ' . $fileId, ['app' => $this->appName]);
-				return ['error' => $this->l10n->t('File not found or not accessible by you.')];
-			}
-			$node = $nodes[0]; // Node in the context of the requester
-
-			$rule = $this->ruleService->getRule($ruleId);
-			if ($rule === null) {
-				$this->logger->error('Rule not found with id: ' . $ruleId, ['app' => $this->appName]);
-				return ['error' => $this->l10n->t('Rule does not exist')];
-			}
-
-			if (!$this->userIsAuthorizedByRule($userId, $rule, 'requesters')) {
-				$this->logger->warning('User ' . $userId . ' is not authorized to request with rule ' . $ruleId, ['app' => $this->appName]);
-				return ['error' => $this->l10n->t('You are not authorized to request with this rule')];
-			}
-			
-			// Check if already pending/approved/rejected for this rule
-			// This check should use the node's ID, which is $fileId (or $node->getId())
-			if ($this->tagObjectMapper->haveTag((string) $fileId, 'files', $rule['tagPending']) ||
-				$this->tagObjectMapper->haveTag((string) $fileId, 'files', $rule['tagApproved']) ||
-				$this->tagObjectMapper->haveTag((string) $fileId, 'files', $rule['tagRejected'])) {
-				$this->logger->info('File ' . $fileId . ' already has an approval status for rule ' . $ruleId, ['app' => $this->appName]);
-				return ['error' => $this->l10n->t('Approval has already been requested or processed for this file with this rule.')];
-			}
-
-			// If createShares is true, the actual request logic (tagging, notification) might be deferred
-			// or handled after shares are confirmed. For now, the original logic was:
-			// if ($createShares) {
-			// $this->shareWithApprovers($fileId, $rule, $userId);
-			// return []; // Original logic returned early
-			// }
-			// We'll adjust this: shares are created, then we proceed.
-
-			$this->tagObjectMapper->assignTags((string) $fileId, 'files', $rule['tagPending']);
-			
-			$this->activityManager->addRequestActivity(
-				$fileId,
-				$ruleId,
-				$node->getName(), // Use the node we fetched
-				$userId,
-				$user->getDisplayName(),
-				$node->getOwner()->getUID() // Owner of the node
-			);
-
-			if ($createShares) {
-				$sharingOutcome = $this->shareWithApprovers($fileId, $rule, $userId);
-				// Log outcome of sharing if needed, e.g., if $sharingOutcome contains error/warning info
-				if (isset($sharingOutcome['warning'])) {
-					$this->logger->warning('Sharing warning for file ' . $fileId . ', rule ' . $ruleId . ': ' . $sharingOutcome['warning'], ['app' => $this->appName]);
-                    // Decide if this warning should halt the process or just be logged.
-                    // For now, we continue to send notifications.
+		if ($this->userIsAuthorizedByRule($userId, $rule, 'requesters')) {
+			// only request if it has not yet been requested for this rule
+			if (!$this->tagObjectMapper->haveTag((string) $fileId, 'files', $rule['tagPending'])) {
+				if ($createShares) {
+					$this->shareWithApprovers($fileId, $rule, $userId);
+					// if shares are auto created, request is actually done in a separated request with $createShares === false
+					return [];
 				}
-                if (isset($sharingOutcome['error'])) {
-					$this->logger->error('Sharing error for file ' . $fileId . ', rule ' . $ruleId . ': ' . $sharingOutcome['error'], ['app' => $this->appName]);
-                    // If sharing is critical and failed, we might want to return an error here.
-                    // return ['error' => 'Failed to create necessary shares: ' . $sharingOutcome['error']];
+				// store activity in our tables
+				$this->ruleService->storeAction($fileId, $ruleId, $userId, Application::STATE_PENDING);
+
+				$this->tagObjectMapper->assignTags((string) $fileId, 'files', $rule['tagPending']);
+
+				// still produce an activity entry for the user who requests
+				$this->activityManager->triggerEvent(
+					ActivityManager::APPROVAL_OBJECT_NODE, $fileId,
+					ActivityManager::SUBJECT_REQUESTED_ORIGIN,
+					['origin_user_id' => $userId]
+				);
+
+				// check if someone can actually approve
+				$ruleUserIds = $this->getRuleAuthorizedUserIds($rule, 'approvers');
+				foreach ($ruleUserIds as $uid) {
+					if ($this->utilsService->userHasAccessTo($fileId, $uid)) {
+						return [];
+					}
 				}
+				return ['warning' => $this->l10n->t('This element is not shared with any user who is authorized to approve it')];
+			} else {
+				return ['error' => $this->l10n->t('Approval has already been requested with this rule for this file')];
 			}
-			
-			$this->sendRequestNotification($fileId, $rule, $userId, false);
-
-			return $this->getApprovalState($fileId, $userId, true); // true because we've confirmed user access by getting the node
-
-		} catch (TagNotFoundException $e) {
-			$this->logger->error('Tag operation failed for file ' . $fileId . ', rule ' . $ruleId . ': ' . $e->getMessage(), ['app' => $this->appName, 'exception' => $e]);
-			return ['error' => $this->l10n->t('Failed to process approval tags: %s', [$e->getMessage()])];
-		} catch (\OCP\Files\NotFoundException $e) {
-			$this->logger->error('File system error (NotFound) during approval request for file ' . $fileId . ' by user ' . $userId . ': ' . $e->getMessage(), ['app' => $this->appName, 'exception' => $e]);
-			return ['error' => $this->l10n->t('File system error: File not found or not accessible. %s', [$e->getMessage()])];
-		} catch (\OCP\Files\GenericFileException $e) { // Catch more general file exceptions
-			$this->logger->error('Generic file system error during approval request for file ' . $fileId . ' by user ' . $userId . ': ' . $e->getMessage(), ['app' => $this->appName, 'exception' => $e]);
-			return ['error' => $this->l10n->t('A file system error occurred: %s', [$e->getMessage()])];
-		} catch (\Throwable $e) {
-			$this->logger->critical('Unexpected critical error during approval request for file ' . $fileId . ', rule ' . $ruleId . ' by user ' . $userId . ': ' . $e->getMessage() . ' Stack: ' . $e->getTraceAsString(), ['app' => $this->appName, 'exception' => $e]);
-			return ['error' => $this->l10n->t('An unexpected server error occurred. Please contact your administrator.')];
-			// For debugging, you might return $e->getMessage(), but for production, a generic error is better.
-			// return ['error' => 'An unexpected server error occurred: ' . $e->getMessage()];
+		} else {
+			return ['error' => $this->l10n->t('You are not authorized to request with this rule')];
 		}
 	}
 
@@ -545,78 +491,64 @@ class ApprovalService {
 	}
 
 	/**
-	 * Share file with everybody who can approve with given rule.
-	 * This is a simplified revert version.
+	 * Share file with everybody who can approve with given rule and have no access yet
 	 *
 	 * @param int $fileId
 	 * @param array $rule
-	 * @param string $userId The ID of the user initiating the request (requester)
-	 * @return array List of shares that were attempted/created (can be empty)
+	 * @param string $userId
+	 * @return array list of created shares
+	 * @throws \OCP\Files\NotPermittedException
+	 * @throws \OC\User\NoUserException
 	 */
 	private function shareWithApprovers(int $fileId, array $rule, string $userId): array {
 		$createdShares = [];
-		$this->logger->debug('Reverted_Share_SA: Attempting to share fileId: ' . $fileId . ' for rule: ' . $rule['id'] . ' by user: ' . $userId, ['app' => $this->appName]);
-
-		// First, get the node using the requester's context to ensure they have access to request approval for it.
-		$requesterUserFolder = $this->root->getUserFolder($userId);
-		$nodeResultsRequester = $requesterUserFolder->getById($fileId);
-
-		if (count($nodeResultsRequester) === 0) {
-			$this->logger->error('Reverted_Share_SA: Node with fileId ' . $fileId . ' not found or not accessible for requesting user ' . $userId, ['app' => $this->appName]);
-			return ['error' => 'File not found by requester, cannot initiate sharing for approval.'];
-		}
-		$nodeForSharing = $nodeResultsRequester[0]; // This is the node we intend to share.
-		$fileOwnerId = $nodeForSharing->getOwner()->getUID();
-
-		// It's generally best practice for shares to be created by the actual owner of the file.
-		// If the requester is not the owner, get the node again from the owner's perspective.
-		if ($userId !== $fileOwnerId) {
-			$ownerUserFolder = $this->root->getUserFolder($fileOwnerId);
-			$nodeResultsOwner = $ownerUserFolder->getById($fileId);
-			if (count($nodeResultsOwner) === 0) {
-				$this->logger->error('Reverted_Share_SA: Node with fileId ' . $fileId . ' not found in owner \'' . $fileOwnerId . '\'s context. Cannot create share as owner.', ['app' => $this->appName]);
-				// Fallback: attempt to share the node instance we got from the requester. This might fail if permissions are insufficient.
-				$this->logger->warning('Reverted_Share_SA: Proceeding to share node from requester\'s context due to owner context failure.', ['app' => $this->appName]);
-			} else {
-				$nodeForSharing = $nodeResultsOwner[0]; // Prefer the owner's node instance for sharing.
+		// get node
+		$userFolder = $this->root->getUserFolder($userId);
+		$nodeResults = $userFolder->getById($fileId);
+		if (count($nodeResults) > 0) {
+			$node = $nodeResults[0];
+			// get the node again from the owner's storage to avoid sharing permission issues
+			$ownerId = $node->getOwner()->getUID();
+			$ownerFolder = $this->root->getUserFolder($ownerId);
+			$ownerNodeResults = $ownerFolder->getById($fileId);
+			if (count($ownerNodeResults) > 0) {
+				$node = $ownerNodeResults[0];
 			}
+		} else {
+			return [];
 		}
-
 		$label = $this->l10n->t('Please check my approval request');
+		$fileOwner = $node->getOwner()->getUID();
 
-		foreach ($rule['approvers'] as $approverDetails) {
-			$approverEntityId = $approverDetails['entityId'];
-			$approverType = $approverDetails['type'];
-			$shareType = null;
-
-			if ($approverType === 'user') {
-				$shareType = IShare::TYPE_USER;
-			} elseif ($approverType === 'group' && $this->shareManager->allowGroupSharing()) {
-				$shareType = IShare::TYPE_GROUP;
-			} elseif ($approverType === 'circle' && $this->appManager->isEnabledForUser('circles') && class_exists(\\OCA\\Circles\\CirclesManager::class)) {
-				$shareType = IShare::TYPE_CIRCLE;
-			}
-
-			if ($shareType !== null) {
-				// Basic check: don't re-share to a user if they already have access.
-				// This can be made more sophisticated if needed.
-				if ($shareType === IShare::TYPE_USER && $this->utilsService->userHasAccessTo($fileId, $approverEntityId)) {
-					$this->logger->info('Reverted_Share_SA: User ' . $approverEntityId . ' already has access to fileId ' . $fileId . '. Skipping duplicate share creation.', ['app' => $this->appName]);
-					// We might still want to record that a share attempt was made or would have been made.
-					// For now, just skip actual share creation to be safe.
-					// $createdShares[] = $approverDetails; // Add to indicate it was processed, even if not shared anew.
-					continue; // Skip to next approver
-				}
-
-				// Call the simplified createShare from UtilsService, using $fileOwnerId as the one performing the share action.
-				if ($this->utilsService->createShare($nodeForSharing, $shareType, $approverEntityId, $fileOwnerId, $label)) {
-					$createdShares[] = $approverDetails;
-					$this->logger->debug('Reverted_Share_SA: Successfully created share for ' . $approverType . ' ' . $approverEntityId . ' for fileId ' . $fileId, ['app' => $this->appName]);
-				} else {
-					$this->logger->warning('Reverted_Share_SA: Failed to create share for ' . $approverType . ' ' . $approverEntityId . ' for fileId ' . $fileId, ['app' => $this->appName]);
+		foreach ($rule['approvers'] as $approver) {
+			if ($approver['type'] === 'user' && !$this->utilsService->userHasAccessTo($fileId, $approver['entityId'])) {
+				// create user share
+				if ($this->utilsService->createShare($node, IShare::TYPE_USER, $approver['entityId'], $fileOwner, $label)) {
+					$createdShares[] = $approver;
 				}
 			}
 		}
+		if ($this->shareManager->allowGroupSharing()) {
+			foreach ($rule['approvers'] as $approver) {
+				if ($approver['type'] === 'group') {
+					if ($this->utilsService->createShare($node, IShare::TYPE_GROUP, $approver['entityId'], $fileOwner, $label)) {
+						$createdShares[] = $approver;
+					}
+				}
+			}
+		}
+
+		$circlesEnabled = $this->appManager->isEnabledForUser('circles') && class_exists(\OCA\Circles\CirclesManager::class);
+		if ($circlesEnabled) {
+			foreach ($rule['approvers'] as $approver) {
+				if ($approver['type'] === 'circle') {
+					if ($this->utilsService->createShare($node, IShare::TYPE_CIRCLE, $approver['entityId'], $fileOwner, $label)) {
+						$createdShares[] = $approver;
+					}
+				}
+			}
+		}
+
 		return $createdShares;
 	}
 

@@ -22,8 +22,6 @@ use OCP\Share\IShare;
 use OCP\SystemTag\ISystemTagManager;
 use OCP\SystemTag\TagAlreadyExistsException;
 use OCP\SystemTag\TagNotFoundException;
-// It's good practice to have a logger available if complex operations are done
-// use Psr\Log\LoggerInterface; 
 
 class UtilsService {
 
@@ -31,14 +29,13 @@ class UtilsService {
 	 * Service providing storage, circles and tags tools
 	 */
 	public function __construct(
-		// string $appName, // Only if used by other methods or a logger
+		string $appName,
 		private IUserManager $userManager,
 		private IShareManager $shareManager,
 		private IRootFolder $root,
 		private ISystemTagManager $tagManager,
 		private IConfig $config,
 		private ICrypto $crypto
-		// private LoggerInterface $logger // Inject if logging is added back
 	) {
 	}
 
@@ -72,11 +69,21 @@ class UtilsService {
 	}
 
 	/**
-	 * Create one basic share.
+	 * Create one share
+	 *
+	 * @param Node $node
+	 * @param int $type
+	 * @param string $sharedWith
+	 * @param string $sharedBy
+	 * @param string $label
+	 * @return bool success
 	 */
 	public function createShare(Node $node, int $type, string $sharedWith, string $sharedBy, string $label): bool {
 		$share = $this->shareManager->newShare();
 		$share->setNode($node)
+			// share permission is not necessary for rule chaining
+			// because we get the file from its owner's storage so we can share it whatsoever
+			// ->setPermissions(Constants::PERMISSION_READ | Constants::PERMISSION_SHARE)
 			->setPermissions(Constants::PERMISSION_READ)
 			->setSharedWith($sharedWith)
 			->setShareType($type)
@@ -91,10 +98,17 @@ class UtilsService {
 				->setMailSend(false)
 				->setStatus(IShare::STATUS_ACCEPTED);
 			$this->shareManager->updateShare($share);
+			// $share = $this->shareManager->updateShare($share);
+			//// this was done instead of ->setStatus() but it does not seem to work all the time
+			//if ($type === IShare::TYPE_USER) {
+			//	try {
+			//		$this->shareManager->acceptShare($share, $sharedWith);
+			//	} catch (\Throwable | \Exception $e) {
+			//		$this->logger->warning('Approval sharing error : '.$e->getMessage(), ['app' => $this->appName]);
+			//	}
+			//}
 			return true;
 		} catch (Exception $e) {
-			// If logger was injected:
-			// $this->logger->error('Failed to create or update share: ' . $e->getMessage(), ['app' => Application::APP_ID, 'exception' => $e]);
 			return false;
 		}
 	}
@@ -107,9 +121,6 @@ class UtilsService {
 	 * @return bool
 	 */
 	public function isUserInCircle(string $userId, string $circleId): bool {
-		if (!class_exists(\OCA\Circles\CirclesManager::class)) {
-			return false;
-		}
 		$circlesManager = \OC::$server->get(\OCA\Circles\CirclesManager::class);
 		$circlesManager->startSuperSession();
 		try {
@@ -118,13 +129,16 @@ class UtilsService {
 			$circlesManager->stopSession();
 			return false;
 		}
+		// is the circle owner
 		$owner = $circle->getOwner();
+		// the owner is also a member so this might be useless...
 		if ($owner->getUserType() === 1 && $owner->getUserId() === $userId) {
 			$circlesManager->stopSession();
 			return true;
 		} else {
 			$members = $circle->getMembers();
 			foreach ($members as $m) {
+				// is member of this circle
 				if ($m->getUserType() === 1 && $m->getUserId() === $userId) {
 					$circlesManager->stopSession();
 					return true;
@@ -143,9 +157,6 @@ class UtilsService {
 	 * @return bool
 	 */
 	public function userHasAccessTo(int $fileId, ?string $userId): bool {
-		if ($userId === null) {
-			return false;
-		}
 		$user = $this->userManager->get($userId);
 		if ($user instanceof IUser) {
 			$userFolder = $this->root->getUserFolder($userId);
