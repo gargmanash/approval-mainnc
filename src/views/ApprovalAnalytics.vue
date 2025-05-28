@@ -185,9 +185,10 @@ export default {
 .summary-table td {
 	text-align: center;
 }
+
 .summary-table th:first-child,
 .summary-table td:first-child {
-	text-align: left;
+	text-align: start;
 }
 
 .workflow-group h2 {
