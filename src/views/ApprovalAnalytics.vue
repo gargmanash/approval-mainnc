@@ -21,7 +21,7 @@
 							</tr>
 						</thead>
 						<tbody>
-							<tr v-for="file in files" :key="file.id + '-' + file.rule_id">
+							<tr v-for="file in files" :key="file.file_id + '-' + file.rule_id">
 								<td>{{ getFileName(file.path) }}</td>
 								<td>{{ getStatusLabel(file.status_code) }}</td>
 								<td>{{ formatTimestamp(file.sent_at) }}</td>
