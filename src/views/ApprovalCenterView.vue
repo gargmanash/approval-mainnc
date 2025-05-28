@@ -64,63 +64,59 @@ export default {
 			// eslint-disable-next-line no-console
 			console.log('[ApprovalCenterView] computed fileTreeWithKpis: input allApprovalFiles:', JSON.parse(JSON.stringify(this.allApprovalFiles)))
 			const tree = []
-			const map = {}
+			const map = {} // Map for FOLDERS ONLY: path -> folderNode
 
-			// Build tree: folders and files as siblings, files only under their true parent
+			// Build tree: folders and files. Folders are unique by path. Files are created for each entry in allApprovalFiles.
 			this.allApprovalFiles.forEach(file => {
 				const pathParts = file.path.split('/').filter(p => p !== '')
-				let currentLevel = tree
-				let currentPath = ''
-				let parentNode = null
+				let currentLevelForFolderCreation = tree
+				let cumulativeFolderPath = ''
+				let parentFolderNode = null // This will be the folder node that is the direct parent of the file
 
-				// Traverse all but the last part (which is the file)
+				// Traverse all but the last part (which is the file name) to build/find folder nodes
 				for (let i = 0; i < pathParts.length - 1; i++) {
 					const part = pathParts[i]
-					currentPath += '/' + part
-					let existingNode = map[currentPath]
-					if (!existingNode) {
-						existingNode = {
+					cumulativeFolderPath += '/' + part // Path of the current folder part
+					let existingFolderNode = map[cumulativeFolderPath] // Check if this folder node already exists in our map
+					if (!existingFolderNode) {
+						existingFolderNode = {
 							name: part,
 							type: 'folder',
-							path: currentPath,
+							path: cumulativeFolderPath,
 							children: [],
 							kpis: { pending: 0, approved: 0, rejected: 0 },
-							expanded: !!this.expandedFolderStates[currentPath],
+							expanded: !!this.expandedFolderStates[cumulativeFolderPath],
 						}
-						map[currentPath] = existingNode
-						currentLevel.push(existingNode)
+						map[cumulativeFolderPath] = existingFolderNode // Store the new folder node in the map
+						currentLevelForFolderCreation.push(existingFolderNode) // Add the new folder to its parent's children array
 					}
-					parentNode = existingNode
-					currentLevel = existingNode.children
+					parentFolderNode = existingFolderNode // This folder is the parent for the next part of the path or the file itself
+					currentLevelForFolderCreation = existingFolderNode.children // Subsequent folders will be added to this folder's children
 				}
 
-				// Now add the file node as a child of the last folder
+				// Now add the file node. Each 'file' object from allApprovalFiles creates a distinct fileNode.
 				const fileName = pathParts[pathParts.length - 1]
-				const filePath = currentPath + '/' + fileName
-				if (!map[filePath]) {
-					const fileNode = {
-						name: fileName,
-						type: 'file',
-						path: filePath,
-						originalFile: file,
-						kpis: { pending: 0, approved: 0, rejected: 0 },
-					}
-					if (file.status_code === STATUS_PENDING) fileNode.kpis.pending = 1
-					else if (file.status_code === STATUS_APPROVED) fileNode.kpis.approved = 1
-					else if (file.status_code === STATUS_REJECTED) fileNode.kpis.rejected = 1
-					if (parentNode && parentNode.children) {
-						// Prevent duplicate file nodes
-						if (!parentNode.children.some(child => child.type === 'file' && child.name === fileName)) {
-							parentNode.children.push(fileNode)
-						}
-					} else {
-						// Prevent duplicate file nodes at root
-						if (!tree.some(child => child.type === 'file' && child.name === fileName)) {
-							tree.push(fileNode)
-						}
-					}
-					map[filePath] = fileNode
+				const fileNode = {
+					name: fileName,
+					type: 'file',
+					path: file.path, // Use the original path from the file object
+					originalFile: file, // Keep a reference to the original file object from the backend
+					kpis: { pending: 0, approved: 0, rejected: 0 },
 				}
+
+				if (file.status_code === STATUS_PENDING) fileNode.kpis.pending = 1
+				else if (file.status_code === STATUS_APPROVED) fileNode.kpis.approved = 1
+				else if (file.status_code === STATUS_REJECTED) fileNode.kpis.rejected = 1
+
+				// Add the fileNode to the determined parent folder's children array, or to the root if it's a root file
+				if (parentFolderNode) {
+					parentFolderNode.children.push(fileNode)
+				} else {
+					// File is at the root (e.g., path was just "filename.txt")
+					tree.push(fileNode)
+				}
+				// Note: We do not use the map for file nodes, nor do we check for duplicates by name within the same parent,
+				// allowing multiple entries for the same file if they represent different workflow instances.
 			})
 
 			// Recursive function to calculate KPIs upwards
