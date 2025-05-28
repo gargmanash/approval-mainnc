@@ -164,12 +164,10 @@ class ConfigController extends Controller {
 		$allFilesData = [];
 		$qb = $this->db->getQueryBuilder();
 
-		// Step 1: Get all distinct (file_id, rule_id) pairs that have had a 'pending' status,
-		// indicating an approval process was initiated for that file under that rule.
-		// We also fetch the latest status for each pair.
+		// Step 1: Get all distinct (file_id, rule_id) pairs from approval_activity.
+		// This ensures we consider every workflow a file has interacted with.
 		$qb->selectDistinct(['aa.file_id', 'aa.rule_id'])
-			->from('approval_activity', 'aa')
-			->where($qb->expr()->eq('aa.new_state', $qb->createNamedParameter(1, IQueryBuilder::PARAM_INT))); // State_Pending
+			->from('approval_activity', 'aa');
 
 		$stmt = $qb->execute();
 		$fileRulePairs = $stmt->fetchAll();
@@ -268,11 +266,8 @@ class ConfigController extends Controller {
 				];
 			} catch (NotFoundException $e) {
 				// File might have been deleted, skip this instance
-				$this->logger->debug("File with ID $fileId not found, skipping for getAllApprovalFiles.", ['exception' => $e]);
 				continue;
 			} catch (\Throwable $e) {
-				// Log and skip any other error for this specific file-rule pair
-				$this->logger->error("Error processing file-rule pair ($fileId, $ruleId) in getAllApprovalFiles: " . $e->getMessage(), ['exception' => $e]);
 				continue;
 			}
 		}
