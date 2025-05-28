@@ -207,13 +207,12 @@ class ConfigController extends Controller {
 				$approvedAt = null;
 				$rejectedAt = null;
 
-				// Sent At (first pending for this file-rule instance)
+				// Sent At (earliest activity for this file-rule instance)
 				$qbSent = $this->db->getQueryBuilder();
 				$qbSent->select('timestamp')
 					->from('approval_activity')
 					->where($qbSent->expr()->eq('file_id', $qbSent->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)))
 					->andWhere($qbSent->expr()->eq('rule_id', $qbSent->createNamedParameter($ruleId, IQueryBuilder::PARAM_INT)))
-					->andWhere($qbSent->expr()->eq('new_state', $qbSent->createNamedParameter(1, IQueryBuilder::PARAM_INT))) // STATE_PENDING
 					->orderBy('timestamp', 'ASC')
 					->setMaxResults(1);
 				$stmtSent = $qbSent->execute();
