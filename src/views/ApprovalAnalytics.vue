@@ -25,8 +25,8 @@
 								<td>{{ getFileName(file.path) }}</td>
 								<td>{{ getStatusLabel(file.status_code) }}</td>
 								<td>{{ formatTimestamp(file.sent_at) }}</td>
-								<td>{{ formatTimestamp(file.approved_at) }}</td>
-								<td>{{ formatTimestamp(file.rejected_at) }}</td>
+								<td>{{ formatTimestamp(file.status_code === 2 ? file.approved_at : null) }}</td>
+								<td>{{ formatTimestamp(file.status_code === 3 ? file.rejected_at : null) }}</td>
 							</tr>
 						</tbody>
 					</table>
