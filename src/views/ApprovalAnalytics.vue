@@ -38,6 +38,7 @@
 						<thead>
 							<tr>
 								<th>{{ t('approval', 'File Name') }}</th>
+								<th>{{ t('approval', 'File Path') }}</th>
 								<th>{{ t('approval', 'Status') }}</th>
 								<th>{{ t('approval', 'Sent At') }}</th>
 								<th>{{ t('approval', 'Approved At') }}</th>
@@ -47,6 +48,7 @@
 						<tbody>
 							<tr v-for="file in files" :key="file.file_id + '-' + file.rule_id">
 								<td>{{ getFileName(file.path) }}</td>
+								<td>{{ file.path }}</td>
 								<td>{{ getStatusLabel(file.status_code) }}</td>
 								<td>{{ formatTimestamp(file.sent_at) }}</td>
 								<td>{{ formatTimestamp(file.status_code === 2 ? file.approved_at : null) }}</td>
