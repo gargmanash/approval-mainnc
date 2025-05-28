@@ -427,6 +427,8 @@ class RuleService {
 	 * @return void
 	 */
 	public function storeAction(int $fileId, int $ruleId, string $userId, int $newState): void {
+		// Remove the deletion of previous activities for this file-rule pair
+		/*
 		$qb = $this->db->getQueryBuilder();
 		$qb->delete('approval_activity')
 			->where(
@@ -436,6 +438,7 @@ class RuleService {
 				$qb->expr()->eq('file_id', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT))
 			);
 		$qb->executeStatement();
+		*/
 
 		$timestamp = (new DateTime())->getTimestamp();
 		$qb = $this->db->getQueryBuilder();
