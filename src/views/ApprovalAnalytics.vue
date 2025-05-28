@@ -91,12 +91,16 @@ export default {
 		async fetchRules() {
 			try {
 				const response = await axios.get(generateUrl('/apps/approval/rules'))
-				this.rules = (response.data || []).reduce((acc, rule) => {
-					acc[rule.id] = rule
+				const rulesArray = response.data ? (Array.isArray(response.data) ? response.data : Object.values(response.data)) : []
+				this.rules = rulesArray.reduce((acc, rule) => {
+					if (rule && rule.id) {
+						acc[rule.id] = rule
+					}
 					return acc
 				}, {})
 			} catch (e) {
 				console.error('Error fetching rules:', e)
+				this.rules = {}
 			}
 		},
 		getFileName(path) {
