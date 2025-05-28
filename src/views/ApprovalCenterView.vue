@@ -139,19 +139,35 @@ export default {
 			// Calculate KPIs for all top-level folders
 			tree.filter(node => node.type === 'folder').forEach(calculateFolderKpis)
 
-			// Find the 'files' node under the root (usually 'admin')
-			if (tree.length === 1 && tree[0].name === 'admin') {
-				const adminNode = tree[0]
-				const filesNode = adminNode.children.find(child => child.type === 'folder' && child.name === 'files')
-				if (filesNode) {
+			// If the tree has a single root node (typically the username like 'manas' or 'admin'),
+			// and that node itself is a folder and contains a direct child folder named 'files',
+			// then we display the contents of that 'files' folder as the root of the tree.
+			// This effectively hides the top-level username folder and the 'files' folder itself.
+			if (tree.length === 1) {
+				const topLevelNode = tree[0]
+				// Ensure topLevelNode is a folder and has children to search
+				if (topLevelNode.type === 'folder' && topLevelNode.children && topLevelNode.children.length > 0) {
+					const filesNode = topLevelNode.children.find(child => child.type === 'folder' && child.name === 'files')
+
+					if (filesNode && filesNode.children) {
+						// eslint-disable-next-line no-console
+						console.log(`[ApprovalCenterView] Root node is '${topLevelNode.name}'. Found 'files' child. Returning contents of '${topLevelNode.name}/files' as the new root.`)
+						return filesNode.children
+					} else {
+						// eslint-disable-next-line no-console
+						console.log(`[ApprovalCenterView] Root node is '${topLevelNode.name}', but a 'files' subdirectory was not found or is empty. Displaying tree from '${topLevelNode.name}'.`)
+					}
+				} else if (topLevelNode.type === 'folder' && (!topLevelNode.children || topLevelNode.children.length === 0)) {
 					// eslint-disable-next-line no-console
-					console.log('[ApprovalCenterView] Returning filesNode.children as root of tree')
-					return filesNode.children
+					console.log(`[ApprovalCenterView] Root node '${topLevelNode.name}' is an empty folder. Displaying it as root.`)
+				} else if (topLevelNode.type === 'file') {
+					// eslint-disable-next-line no-console
+					console.log(`[ApprovalCenterView] Root node '${topLevelNode.name}' is a file. Displaying it as root.`)
 				}
 			}
 
 			// eslint-disable-next-line no-console
-			console.log('[ApprovalCenterView] computed fileTreeWithKpis: output tree:', JSON.parse(JSON.stringify(tree)))
+			console.log('[ApprovalCenterView] computed fileTreeWithKpis: output tree (original or un-modified root):', JSON.parse(JSON.stringify(tree)))
 			return tree
 		},
 	},
