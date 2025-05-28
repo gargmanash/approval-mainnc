@@ -22,6 +22,8 @@ use OCP\Share\IShare;
 use OCP\SystemTag\ISystemTagManager;
 use OCP\SystemTag\TagAlreadyExistsException;
 use OCP\SystemTag\TagNotFoundException;
+// It's good practice to have a logger available if complex operations are done
+// use Psr\Log\LoggerInterface; 
 
 class UtilsService {
 
@@ -29,13 +31,14 @@ class UtilsService {
 	 * Service providing storage, circles and tags tools
 	 */
 	public function __construct(
-		string $appName,
+		string $appName, // Keep appName if other methods use it, or remove if only for logger
 		private IUserManager $userManager,
 		private IShareManager $shareManager,
 		private IRootFolder $root,
 		private ISystemTagManager $tagManager,
 		private IConfig $config,
 		private ICrypto $crypto
+		// private LoggerInterface $logger // Inject logger if used
 	) {
 	}
 
@@ -76,7 +79,7 @@ class UtilsService {
 	 * @param string $sharedWith
 	 * @param string $sharedBy
 	 * @param string $label
-	 * @param string|null $originalRelativePath
+	 * @param string|null $originalRelativePath (Kept for context, does not set hierarchy)
 	 * @return bool success
 	 */
 	public function createShare(Node $node, int $type, string $sharedWith, string $sharedBy, string $label, ?string $originalRelativePath = null): bool {
@@ -89,24 +92,19 @@ class UtilsService {
 			->setMailSend(false)
 			->setExpirationDate(null);
 
-		// DO NOT attempt $share->setTargetPath(...) here as it's an invalid method for a new share object.
-		// The system will place the share in the recipient's 'Shared' folder by default.
-		// $originalRelativePath is kept as a parameter in case future Nextcloud APIs allow influencing this,
-		// or for logging/notification purposes. For now, it does not set the hierarchical path.
+		// Ensure no setTargetPath call is present
+		// Hierarchical path creation is handled outside this basic share creation utility
 
 		try {
 			$share = $this->shareManager->createShare($share);
-			// After creation, update the share with label, note, and status
 			$share->setLabel($label)
-				->setNote($label) // You could potentially put $originalRelativePath in the note for user info
-				->setMailSend(false) // mail send status can also be set on an existing share
+				->setNote($label) 
+				->setMailSend(false)
 				->setStatus(IShare::STATUS_ACCEPTED);
 			$this->shareManager->updateShare($share);
 			return true;
 		} catch (Exception $e) {
-			// Consider logging the exception message: $e->getMessage()
-			// e.g., $this->logger->error('Failed to create or update share: ' . $e->getMessage(), ['app' => Application::APP_ID, 'exception' => $e]);
-			// Ensure you have a logger injected if you use $this->logger
+			// $this->logger->error('Failed to create or update share: ' . $e->getMessage(), ['app' => Application::APP_ID, 'exception' => $e]);
 			return false;
 		}
 	}
@@ -189,51 +187,5 @@ class UtilsService {
 			return ['error' => 'Tag not found'];
 		}
 	}
-
-	/**
-	 * Ensures a given folder hierarchy exists for a user.
-	 *
-	 * @param string $userId The ID of the user.
-	 * @param string $relativePath The desired relative path from the user's root (e.g., "Shared/MySubFolder/AnotherLevel").
-	 * @return \\OCP\\Files\\Folder|null The final folder node if successful, null otherwise.
-	 */
-	public function ensureFolderHierarchy(string $userId, string $relativePath): ?\\OCP\\Files\\Folder {
-		try {
-			$userFolder = $this->root->getUserFolder($userId);
-			if (!$userFolder) {
-				// Log error: Unable to get user folder for $userId
-				return null;
-			}
-
-			$currentPath = '';
-			$parts = explode('/', trim($relativePath, '/'));
-			$folder = $userFolder;
-
-			foreach ($parts as $part) {
-				if (empty($part)) {
-					continue;
-				}
-				$currentPath .= ($currentPath === '' ? '' : '/') . $part;
-				$node = $userFolder->get($currentPath);
-				if ($node instanceof \\OCP\\Files\\Folder) {
-					$folder = $node;
-				} elseif ($node === null) { // Path does not exist, try to create folder
-					$folder = $userFolder->newFolder($currentPath);
-				} else { // Path exists but is not a folder
-					// Log error: Path $currentPath exists but is not a folder for user $userId
-					return null;
-				}
-			}
-			return $folder; // Returns the deepest folder in the hierarchy
-		} catch (\\OCP\\Files\\NotPermittedException $e) {
-			// Log error: Permission denied creating folder hierarchy for $userId at $relativePath
-			return null;
-		} catch (\\OCP\\Files\\StorageNotAvailableException $e) {
-			// Log error: Storage not available for $userId
-			return null;
-		} catch (Exception $e) {
-			// Log general error: $e->getMessage()
-			return null;
-		}
-	}
+	// Ensure ensureFolderHierarchy is REMOVED
 }
