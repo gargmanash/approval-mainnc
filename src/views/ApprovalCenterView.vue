@@ -70,7 +70,7 @@ export default {
 			this.allApprovalFiles.forEach(file => {
 				const pathParts = file.path.split('/').filter(p => p !== '')
 				let currentLevelForFolderCreation = tree
-				let currentPathArray = []
+				const currentPathArray = []
 				let parentFolderNode = null
 
 				for (let i = 0; i < pathParts.length - 1; i++) {
