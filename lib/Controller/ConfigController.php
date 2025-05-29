@@ -117,7 +117,7 @@ class ConfigController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function getWorkflowKpis(): DataResponse {
-		$prefix = $this->db->getPrefix();
+		$prefix = \OC::$server->getConfig()->getSystemValue('dbtableprefix', 'oc_');
 		$sql = "
 			SELECT
 				ar.id AS rule_id,
@@ -195,7 +195,7 @@ class ConfigController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function getAllApprovalFiles(): DataResponse {
-		$prefix = $this->db->getPrefix();
+		$prefix = \OC::$server->getConfig()->getSystemValue('dbtableprefix', 'oc_');
 		$sql = "
 			SELECT
 				dp.file_id,
