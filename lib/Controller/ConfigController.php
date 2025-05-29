@@ -216,7 +216,7 @@ class ConfigController extends Controller {
 		// Subquery for latest status and its timestamp
 		$latestStatusSubQb = $this->db->getQueryBuilder();
 		$latestStatusInnerQb = $this->db->getQueryBuilder();
-		$latestStatusInnerQb->select(['file_id', 'rule_id', $latestStatusInnerQb->expr()->max('timestamp', 'max_ts')])
+		$latestStatusInnerQb->select(['file_id', 'rule_id', 'MAX(timestamp) AS max_ts'])
 			->from('approval_activity')
 			->groupBy(['file_id', 'rule_id']);
 
@@ -235,20 +235,20 @@ class ConfigController extends Controller {
 
 		// Subquery for sent_at (earliest timestamp)
 		$sentAtSubQb = $this->db->getQueryBuilder();
-		$sentAtSubQb->select(['file_id', 'rule_id', $sentAtSubQb->expr()->min('timestamp', 'sent_at_val')])
+		$sentAtSubQb->select(['file_id', 'rule_id', 'MIN(timestamp) AS sent_at_val'])
 			->from('approval_activity')
 			->groupBy(['file_id', 'rule_id']);
 
 		// Subquery for approved_at (latest approval timestamp)
 		$approvedAtSubQb = $this->db->getQueryBuilder();
-		$approvedAtSubQb->select(['file_id', 'rule_id', $approvedAtSubQb->expr()->max('timestamp', 'approved_at_val')])
+		$approvedAtSubQb->select(['file_id', 'rule_id', 'MAX(timestamp) AS approved_at_val'])
 			->from('approval_activity')
 			->where($approvedAtSubQb->expr()->eq('new_state', $approvedAtSubQb->createNamedParameter(2, IQueryBuilder::PARAM_INT)))
 			->groupBy(['file_id', 'rule_id']);
 
 		// Subquery for rejected_at (latest rejection timestamp)
 		$rejectedAtSubQb = $this->db->getQueryBuilder();
-		$rejectedAtSubQb->select(['file_id', 'rule_id', $rejectedAtSubQb->expr()->max('timestamp', 'rejected_at_val')])
+		$rejectedAtSubQb->select(['file_id', 'rule_id', 'MAX(timestamp) AS rejected_at_val'])
 			->from('approval_activity')
 			->where($rejectedAtSubQb->expr()->eq('new_state', $rejectedAtSubQb->createNamedParameter(3, IQueryBuilder::PARAM_INT)))
 			->groupBy(['file_id', 'rule_id']);
