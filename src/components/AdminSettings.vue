@@ -228,7 +228,7 @@ export default {
 	},
 
 	methods: {
-		translate: translate,
+		translate,
 		loadRules() {
 			this.loadingRules = true
 			const url = generateUrl('/apps/approval/rules')
@@ -394,10 +394,9 @@ export default {
 			this.$refs.createTagInput.focus()
 		},
 		async confirmResetAllData() {
-			console.log('[ApprovalAdminSettings] confirmResetAllData called');
 			const builder = getDialogBuilder(
 				translate('approval', 'Reset All Approval Data'),
-				translate('approval', 'Are you sure you want to permanently delete all approval workflows, activity, and history? This action cannot be undone.')
+				translate('approval', 'Are you sure you want to permanently delete all approval workflows, activity, and history? This action cannot be undone.'),
 			)
 			builder.addButton({
 				label: translate('approval', 'Cancel'),
@@ -421,10 +420,9 @@ export default {
 			builder.build().show()
 		},
 		async confirmResetActivity() {
-			console.log('[ApprovalAdminSettings] confirmResetActivity called');
 			const builder = getDialogBuilder(
 				translate('approval', 'Reset File Approval Statuses'),
-				translate('approval', 'Are you sure you want to clear all current approval statuses and history for all files? Workflow definitions will remain. System tags on files will not be removed automatically.')
+				translate('approval', 'Are you sure you want to clear all current approval statuses and history for all files? Workflow definitions will remain. System tags on files will not be removed automatically.'),
 			)
 			builder.addButton({
 				label: translate('approval', 'Cancel'),
