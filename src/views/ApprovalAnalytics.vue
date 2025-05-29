@@ -252,7 +252,7 @@ export default {
 
 <style scoped lang="scss">
 #approval-analytics-page {
-	padding: 20px; /* Add general padding for the whole analytics page content */
+	padding: 32px; /* Increased padding for more breathing room */
 	display: flex;
 	flex-direction: column;
 	height: 100%; // Fill the area provided by NcAppContent
