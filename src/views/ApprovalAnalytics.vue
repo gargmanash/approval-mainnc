@@ -105,8 +105,6 @@ export default {
 			allApprovalFiles: [],
 			rules: {},
 			loading: false,
-			// Store pagination state per workflow
-			// e.g., { 'Workflow A': { currentPage: 1, itemsPerPage: ITEMS_PER_PAGE }, ... }
 			paginationState: {},
 		}
 	},
@@ -116,33 +114,21 @@ export default {
 			this.allApprovalFiles.forEach(file => {
 				const ruleDescription = this.getRuleDescription(file.rule_id)
 				if (!grouped[ruleDescription]) {
-					// Initialize structure for each workflow group
 					grouped[ruleDescription] = {
 						allFiles: [],
 						currentPage: this.paginationState[ruleDescription]?.currentPage || 1,
 						itemsPerPage: this.paginationState[ruleDescription]?.itemsPerPage || ITEMS_PER_PAGE,
-						// paginatedFiles will be computed from allFiles, currentPage, itemsPerPage
-						// totalPages will be computed from allFiles and itemsPerPage
 					}
 				}
 				grouped[ruleDescription].allFiles.push(file)
 			})
 
-			// Now, for each group, compute paginatedFiles and totalPages
 			for (const wfName in grouped) {
 				const group = grouped[wfName]
 				const startIndex = (group.currentPage - 1) * group.itemsPerPage
 				const endIndex = startIndex + group.itemsPerPage
 				group.paginatedFiles = group.allFiles.slice(startIndex, endIndex)
 				group.totalPages = Math.ceil(group.allFiles.length / group.itemsPerPage)
-
-				// Ensure pagination state is initialized for new workflows
-				if (!this.paginationState[wfName]) {
-					this.$set(this.paginationState, wfName, {
-						currentPage: 1,
-						itemsPerPage: ITEMS_PER_PAGE,
-					})
-				}
 			}
 			return grouped
 		},
@@ -152,24 +138,25 @@ export default {
 		try {
 			await this.fetchRules()
 			await this.fetchAllApprovalFiles()
-			// Initialize pagination state after data is fetched
-			this.initializePaginationState()
 		} finally {
 			this.loading = false
 		}
 	},
 	methods: {
 		initializePaginationState() {
-			const newPaginationState = {}
-			for (const file of this.allApprovalFiles) {
-				const ruleDescription = this.getRuleDescription(file.rule_id)
+			const newPaginationState = { ...this.paginationState }
+			const uniqueWorkflowDescriptions = new Set(
+				this.allApprovalFiles.map(file => this.getRuleDescription(file.rule_id)),
+			)
+
+			uniqueWorkflowDescriptions.forEach(ruleDescription => {
 				if (!newPaginationState[ruleDescription]) {
 					newPaginationState[ruleDescription] = {
 						currentPage: 1,
 						itemsPerPage: ITEMS_PER_PAGE,
 					}
 				}
-			}
+			})
 			this.paginationState = newPaginationState
 		},
 		prevPage(workflowName) {
@@ -187,7 +174,7 @@ export default {
 			try {
 				const response = await axios.get(generateUrl('/apps/approval/all-approval-files'))
 				this.allApprovalFiles = response.data || []
-				this.initializePaginationState() // Re-initialize pagination if files change
+				this.initializePaginationState()
 			} catch (e) {
 				console.error('Error fetching approval files:', e)
 			}
