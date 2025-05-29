@@ -2,12 +2,10 @@
 	<div id="approval-center-view">
 		<NcAppContent app-name="approval">
 			<template #app-navigation>
-				<NcAppNavigation :title="t('approval', 'Approval Center')" />
-			</template>
-
-			<div class="split-layout">
-				<div class="left-pane">
-					<h2>{{ t('approval', 'File Approval Status Tree') }}</h2>
+				<NcAppNavigation>
+					<div class="custom-app-navigation-header">
+						<h2>{{ t('approval', 'File Approval Status Tree') }}</h2>
+					</div>
 					<ApprovalFileTree
 						v-if="fileTreeWithKpis.length"
 						:tree-data="fileTreeWithKpis"
@@ -16,17 +14,16 @@
 						@reject-file="handleRejectFile"
 						@view-file="handleViewFile"
 						@toggle-expand="handleToggleExpand" />
-					<p v-else>
+					<p v-else class="empty-tree-message">
 						{{ t('approval', 'No files found in the approval system.') }}
 					</p>
-				</div>
-				<div class="right-pane">
-					<ApprovalAnalytics
-						:workflow-kpis="workflowKpis"
-						:all-approval-files-data="allApprovalFiles"
-						:workflow-rules="workflows" />
-				</div>
-			</div>
+				</NcAppNavigation>
+			</template>
+
+			<ApprovalAnalytics
+				:workflow-kpis="workflowKpis"
+				:all-approval-files-data="allApprovalFiles"
+				:workflow-rules="workflows" />
 		</NcAppContent>
 	</div>
 </template>
@@ -291,40 +288,26 @@ export default {
 </script>
 
 <style scoped lang="scss">
-#approval-center-view { // The root element of ApprovalCenterView
+#approval-center-view {
 	height: 100%;
-}
-
-.split-layout {
-	display: flex;
-	flex-direction: row;
-	gap: 24px;
 	width: 100%;
-	height: 100%; /* Make split-layout take full available height */
-	align-items: stretch; /* Make left and right panes equal height */
-}
-
-.left-pane {
-	width: 320px; /* Fixed width */
-	flex-shrink: 0; /* Prevent shrinking */
-	background: var(--color-main-background);
-	padding: 20px;
-	border-radius: var(--border-radius);
-	box-shadow: var(--box-shadow);
-	/* height: fit-content; */ /* Removed */
-	overflow-y: auto; /* Allow vertical scroll if content exceeds height */
-}
-
-.right-pane {
-	flex-grow: 1; /* Allow growing to take remaining space */
-	background: var(--color-main-background);
-	/* padding: 20px; */ /* Removed, will be handled by child */
-	border-radius: var(--border-radius);
-	box-shadow: var(--box-shadow);
-	overflow: hidden; /* Ensure this pane clips its content, forcing scroll inside */
-	min-width: 0; /* Important for flex items that might contain wide, scrollable content */
 	display: flex;
-	flex-direction: column;
+}
+
+.custom-app-navigation-header {
+	padding: 12px 16px;
+	border-bottom: 1px solid var(--color-border);
+	h2 {
+		font-size: 16px;
+		margin: 0;
+		line-height: 24px;
+	}
+}
+
+.empty-tree-message {
+	padding: 16px;
+	font-style: italic;
+	color: var(--color-text-maxcontrast-secondary);
 }
 
 h1, h2 {
