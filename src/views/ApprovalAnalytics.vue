@@ -257,11 +257,11 @@ export default {
 	overflow-x: auto;
 	margin-bottom: 10px; /* Adjusted space for pagination controls */
 	display: block; /* Ensure it behaves as a block element */
-	max-width: 100%; /* Constrain to parent width */
+	width: 100%; /* Make wrapper take full width of its container (.right-pane) */
 }
 
 .analytics-table {
-	width: 100%;
+	/* min-width: 100%; */ /* Removed to allow table to size to its content */
 	border-collapse: collapse;
 	margin-top: 10px;
 	/* margin-bottom is removed as pagination controls will have their own margin */
