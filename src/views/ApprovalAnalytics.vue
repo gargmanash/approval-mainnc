@@ -44,38 +44,32 @@
 										<th @click="sortByColumn(workflowName, 'fileName')">
 											{{ t('approval', 'File Name') }}
 											<span v-if="sortingState[workflowName] && sortingState[workflowName].key === 'fileName'"
-												:class="['sort-arrow', sortingState[workflowName].order]">
-											</span>
+												:class="['sort-arrow', sortingState[workflowName].order]" />
 										</th>
 										<th @click="sortByColumn(workflowName, 'filePath')">
 											{{ t('approval', 'File Path') }}
 											<span v-if="sortingState[workflowName] && sortingState[workflowName].key === 'filePath'"
-												:class="['sort-arrow', sortingState[workflowName].order]">
-											</span>
+												:class="['sort-arrow', sortingState[workflowName].order]" />
 										</th>
 										<th @click="sortByColumn(workflowName, 'status')">
 											{{ t('approval', 'Status') }}
 											<span v-if="sortingState[workflowName] && sortingState[workflowName].key === 'status'"
-												:class="['sort-arrow', sortingState[workflowName].order]">
-											</span>
+												:class="['sort-arrow', sortingState[workflowName].order]" />
 										</th>
 										<th @click="sortByColumn(workflowName, 'sent_at')">
 											{{ t('approval', 'Sent At') }}
 											<span v-if="sortingState[workflowName] && sortingState[workflowName].key === 'sent_at'"
-												:class="['sort-arrow', sortingState[workflowName].order]">
-											</span>
+												:class="['sort-arrow', sortingState[workflowName].order]" />
 										</th>
 										<th @click="sortByColumn(workflowName, 'approved_at')">
 											{{ t('approval', 'Approved At') }}
 											<span v-if="sortingState[workflowName] && sortingState[workflowName].key === 'approved_at'"
-												:class="['sort-arrow', sortingState[workflowName].order]">
-											</span>
+												:class="['sort-arrow', sortingState[workflowName].order]" />
 										</th>
 										<th @click="sortByColumn(workflowName, 'rejected_at')">
 											{{ t('approval', 'Rejected At') }}
 											<span v-if="sortingState[workflowName] && sortingState[workflowName].key === 'rejected_at'"
-												:class="['sort-arrow', sortingState[workflowName].order]">
-											</span>
+												:class="['sort-arrow', sortingState[workflowName].order]" />
 										</th>
 									</tr>
 								</thead>
@@ -220,9 +214,9 @@ export default {
 						valB = b[sortKey]
 					}
 
-					if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
-					if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
-					return 0;
+					if (valA < valB) return sortOrder === 'asc' ? -1 : 1
+					if (valA > valB) return sortOrder === 'asc' ? 1 : -1
+					return 0
 				})
 
 				const startIndex = (group.currentPage - 1) * group.itemsPerPage
@@ -289,7 +283,7 @@ export default {
 				if (!newSortingState[ruleDescription]) { // Default sort state for new workflows
 					newSortingState[ruleDescription] = {
 						key: 'sent_at', // Default sort key
-						order: 'desc',    // Default sort order
+						order: 'desc', // Default sort order
 					}
 				}
 			})
@@ -312,38 +306,38 @@ export default {
 			}
 		},
 		handleItemsPerPageChange(workflowName, newSize) {
-			const newItemsPerPage = parseInt(newSize, 10);
+			const newItemsPerPage = parseInt(newSize, 10)
 			if (this.paginationState[workflowName]) {
-				this.paginationState[workflowName].itemsPerPage = newItemsPerPage;
-				this.paginationState[workflowName].currentPage = 1; // Reset to page 1
-				this.$set(this.paginationState, workflowName, { ...this.paginationState[workflowName] });
+				this.paginationState[workflowName].itemsPerPage = newItemsPerPage
+				this.paginationState[workflowName].currentPage = 1 // Reset to page 1
+				this.$set(this.paginationState, workflowName, { ...this.paginationState[workflowName] })
 			}
 		},
 		handleGoToPage(workflowName, pageNumber, totalPages) {
-			let newPage = parseInt(pageNumber, 10);
-			if (isNaN(newPage)) return;
+			let newPage = parseInt(pageNumber, 10)
+			if (isNaN(newPage)) return
 
-			if (newPage < 1) newPage = 1;
-			if (newPage > totalPages) newPage = totalPages;
+			if (newPage < 1) newPage = 1
+			if (newPage > totalPages) newPage = totalPages
 
 			if (this.paginationState[workflowName]) {
-				this.paginationState[workflowName].currentPage = newPage;
-				this.$set(this.paginationState, workflowName, { ...this.paginationState[workflowName] });
+				this.paginationState[workflowName].currentPage = newPage
+				this.$set(this.paginationState, workflowName, { ...this.paginationState[workflowName] })
 			}
 		},
 		sortByColumn(workflowName, key) {
 			// console.log(`[ApprovalAnalytics] sortByColumn called for ${workflowName}, key: ${key}`);
-			const currentSort = this.sortingState[workflowName];
+			const currentSort = this.sortingState[workflowName]
 			if (currentSort.key === key) {
-				currentSort.order = currentSort.order === 'asc' ? 'desc' : 'asc';
+				currentSort.order = currentSort.order === 'asc' ? 'desc' : 'asc'
 			} else {
-				currentSort.key = key;
-				currentSort.order = 'asc'; // Default to ascending for a new column
+				currentSort.key = key
+				currentSort.order = 'asc' // Default to ascending for a new column
 			}
-			this.$set(this.sortingState, workflowName, currentSort);
+			this.$set(this.sortingState, workflowName, currentSort)
 			// Reset to page 1 when sort order changes, to avoid confusion
 			if (this.paginationState[workflowName]) {
-				this.paginationState[workflowName].currentPage = 1;
+				this.paginationState[workflowName].currentPage = 1
 			}
 			// console.log(`[ApprovalAnalytics] New sortingState for ${workflowName}:`, JSON.parse(JSON.stringify(this.sortingState[workflowName])));
 		},
@@ -431,6 +425,7 @@ export default {
 
 	th {
 		background-color: var(--color-background-hover);
+		cursor: pointer; /* Add cursor pointer to indicate clickable headers */
 	}
 }
 
@@ -470,7 +465,7 @@ export default {
 
 .items-per-page-selector label,
 .go-to-page-input label { /* Added for future use */
-	margin-right: 5px;
+	margin-inline-end: 5px; /* Changed from margin-right */
 }
 
 .items-per-page-selector select,
@@ -505,23 +500,14 @@ p {
 	color: var(--color-text-maxcontrast);
 }
 
-.analytics-table th {
-	background-color: var(--color-background-dark);
-	color: var(--color-main-text);
-	padding: 12px 15px;
-	text-align: start;
-	border-bottom: 2px solid var(--color-border-maxcontrast);
-	cursor: pointer; /* Add cursor pointer to indicate clickable headers */
-}
-
 .sort-arrow {
 	display: inline-block;
 	width: 0;
 	height: 0;
-	margin-left: 5px;
+	margin-inline-start: 5px; /* Changed from margin-left */
 	vertical-align: middle;
-	border-left: 5px solid transparent;
-	border-right: 5px solid transparent;
+	border-inline-start: 5px solid transparent; /* Changed from border-left */
+	border-inline-end: 5px solid transparent; /* Changed from border-right */
 }
 
 .sort-arrow.asc {
