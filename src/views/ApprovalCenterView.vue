@@ -318,10 +318,9 @@ export default {
 .right-pane {
 	flex-grow: 1; /* Allow growing to take remaining space */
 	background: var(--color-main-background);
-	padding: 20px;
+	/* padding: 20px; */ /* Removed, will be handled by child */
 	border-radius: var(--border-radius);
 	box-shadow: var(--box-shadow);
-	/* height: fit-content; */ /* Removed */
 	overflow: hidden; /* Ensure this pane clips its content, forcing scroll inside */
 	min-width: 0; /* Important for flex items that might contain wide, scrollable content */
 	display: flex;

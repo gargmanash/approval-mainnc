@@ -252,7 +252,7 @@ export default {
 
 <style scoped lang="scss">
 #approval-analytics-page {
-	padding: 0; // Padding is now on .right-pane in ApprovalCenterView
+	padding: 20px; // ADDED overall padding here
 	display: flex;
 	flex-direction: column;
 	height: 100%; // Fill .right-pane
@@ -262,7 +262,7 @@ export default {
 .workflow-kpi-summary {
 	flex-shrink: 0; // Don't let summary shrink
 	margin-bottom: 20px; // Space after summary
-	padding: 0 20px; // Re-add padding here if needed, or adjust .right-pane padding
+	/* padding: 0 20px; */ // REMOVED - parent handles padding
 }
 
 // New wrapper for content below summary
@@ -271,7 +271,7 @@ export default {
 	display: flex;
 	flex-direction: column;
 	overflow-y: auto; // If content (multiple workflows) overflows vertically
-	padding: 0 20px; // Re-add padding
+	/* padding: 0 20px; */ // REMOVED - parent handles padding
 }
 
 .table-scroll-wrapper {
