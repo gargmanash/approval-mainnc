@@ -215,7 +215,7 @@ class ConfigController extends Controller {
 
 		// Correlated subquery for status_code
 		$statusQb = $this->db->getQueryBuilder();
-		$statusQb->select('aa_latest.new_state')
+		$statusQb->select('new_state')
 			->from('approval_activity', 'aa_latest')
 			->where($statusQb->expr()->eq('aa_latest.file_id', 'aa_main.file_id'))
 			->andWhere($statusQb->expr()->eq('aa_latest.rule_id', 'aa_main.rule_id'))
@@ -224,7 +224,7 @@ class ConfigController extends Controller {
 
 		// Correlated subquery for activity_timestamp (timestamp of the latest status)
 		$activityTsQb = $this->db->getQueryBuilder();
-		$activityTsQb->select('aa_latest_ts.timestamp')
+		$activityTsQb->select('timestamp')
 			->from('approval_activity', 'aa_latest_ts')
 			->where($activityTsQb->expr()->eq('aa_latest_ts.file_id', 'aa_main.file_id'))
 			->andWhere($activityTsQb->expr()->eq('aa_latest_ts.rule_id', 'aa_main.rule_id'))
