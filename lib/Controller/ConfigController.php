@@ -166,6 +166,16 @@ class ConfigController extends Controller {
 			foreach ($distinctFileIds as $fileId) {
 				$fileId = (int)$fileId; // Ensure $fileId is an integer
 
+				// Check if the file node still exists
+				try {
+					$nodes = $this->rootFolder->getById($fileId);
+					if (empty($nodes)) {
+						continue; // Skip if node not found for this fileId
+					}
+				} catch (\OCP\Files\NotFoundException $e) {
+					continue; // Skip if node not found (exception)
+				}
+
 				// Subquery to get the latest state for this specific file_id and rule_id
 				$qbState = $this->db->getQueryBuilder();
 				$qbState->select('new_state')
