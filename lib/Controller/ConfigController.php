@@ -227,8 +227,6 @@ class ConfigController extends Controller {
 		$allFilesData = [];
 		$qb = $this->db->getQueryBuilder();
 
-		// Step 1: Get all distinct (file_id, rule_id) pairs from approval_activity.
-		// This ensures we consider every workflow a file has interacted with.
 		$qb->selectDistinct(['aa.file_id', 'aa.rule_id'])
 			->from('approval_activity', 'aa');
 
@@ -247,75 +245,48 @@ class ConfigController extends Controller {
 			try {
 				$nodes = $this->rootFolder->getById($fileId);
 				if (empty($nodes)) {
-					continue; // Skip if node not found
+					continue;
 				}
 				$node = $nodes[0];
 				$filePath = $node->getPath();
 
-				// Step 2: For this specific (file_id, rule_id) pair, get its current status
-				$qbStatus = $this->db->getQueryBuilder();
-				$qbStatus->select('new_state')
+				// Fetch ALL activities for this specific (file_id, rule_id) pair
+				$qbActivities = $this->db->getQueryBuilder();
+				$qbActivities->select(['new_state', 'timestamp'])
 					->from('approval_activity')
-					->where($qbStatus->expr()->eq('file_id', $qbStatus->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)))
-					->andWhere($qbStatus->expr()->eq('rule_id', $qbStatus->createNamedParameter($ruleId, IQueryBuilder::PARAM_INT)))
-					->orderBy('timestamp', 'DESC')
-					->setMaxResults(1);
-				$stmtStatus = $qbStatus->execute();
-				$currentStatusRow = $stmtStatus->fetch();
-				$stmtStatus->closeCursor();
-				$currentStatusCode = $currentStatusRow ? (int)$currentStatusRow['new_state'] : null;
+					->where($qbActivities->expr()->eq('file_id', $qbActivities->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)))
+					->andWhere($qbActivities->expr()->eq('rule_id', $qbActivities->createNamedParameter($ruleId, IQueryBuilder::PARAM_INT)))
+					->orderBy('timestamp', 'ASC');
 
-				// Step 3: Get timestamps for sent, approved, rejected for this specific (file_id, rule_id)
-				$sentAt = null;
+				$stmtActivities = $qbActivities->execute();
+				$activities = $stmtActivities->fetchAll();
+				$stmtActivities->closeCursor();
+
+				if (empty($activities)) {
+					continue;
+				}
+
+				$sentAt = (int)$activities[0]['timestamp'];
+				$currentStatusCode = (int)end($activities)['new_state'];
+
 				$approvedAt = null;
 				$rejectedAt = null;
 
-				// Sent At (earliest activity for this file-rule instance)
-				$qbSent = $this->db->getQueryBuilder();
-				$qbSent->select('timestamp')
-					->from('approval_activity')
-					->where($qbSent->expr()->eq('file_id', $qbSent->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)))
-					->andWhere($qbSent->expr()->eq('rule_id', $qbSent->createNamedParameter($ruleId, IQueryBuilder::PARAM_INT)))
-					->orderBy('timestamp', 'ASC')
-					->setMaxResults(1);
-				$stmtSent = $qbSent->execute();
-				$sentRow = $stmtSent->fetch();
-				if ($sentRow) {
-					$sentAt = (int)$sentRow['timestamp'];
+				// Find the latest timestamp for an approval action by iterating backwards
+				foreach (array_reverse($activities) as $activity) {
+					if ((int)$activity['new_state'] === 2) { // STATE_APPROVED
+						$approvedAt = (int)$activity['timestamp'];
+						break;
+					}
 				}
-				$stmtSent->closeCursor();
 
-				// Approved At (latest approved for this file-rule instance)
-				$qbApproved = $this->db->getQueryBuilder();
-				$qbApproved->select('timestamp')
-					->from('approval_activity')
-					->where($qbApproved->expr()->eq('file_id', $qbApproved->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)))
-					->andWhere($qbApproved->expr()->eq('rule_id', $qbApproved->createNamedParameter($ruleId, IQueryBuilder::PARAM_INT)))
-					->andWhere($qbApproved->expr()->eq('new_state', $qbApproved->createNamedParameter(2, IQueryBuilder::PARAM_INT))) // STATE_APPROVED
-					->orderBy('timestamp', 'DESC')
-					->setMaxResults(1);
-				$stmtApproved = $qbApproved->execute();
-				$approvedRow = $stmtApproved->fetch();
-				if ($approvedRow) {
-					$approvedAt = (int)$approvedRow['timestamp'];
+				// Find the latest timestamp for a rejection action by iterating backwards
+				foreach (array_reverse($activities) as $activity) {
+					if ((int)$activity['new_state'] === 3) { // STATE_REJECTED
+						$rejectedAt = (int)$activity['timestamp'];
+						break;
+					}
 				}
-				$stmtApproved->closeCursor();
-
-				// Rejected At (latest rejected for this file-rule instance)
-				$qbRejected = $this->db->getQueryBuilder();
-				$qbRejected->select('timestamp')
-					->from('approval_activity')
-					->where($qbRejected->expr()->eq('file_id', $qbRejected->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)))
-					->andWhere($qbRejected->expr()->eq('rule_id', $qbRejected->createNamedParameter($ruleId, IQueryBuilder::PARAM_INT)))
-					->andWhere($qbRejected->expr()->eq('new_state', $qbRejected->createNamedParameter(3, IQueryBuilder::PARAM_INT))) // STATE_REJECTED
-					->orderBy('timestamp', 'DESC')
-					->setMaxResults(1);
-				$stmtRejected = $qbRejected->execute();
-				$rejectedRow = $stmtRejected->fetch();
-				if ($rejectedRow) {
-					$rejectedAt = (int)$rejectedRow['timestamp'];
-				}
-				$stmtRejected->closeCursor();
 
 				$allFilesData[] = [
 					'file_id' => $fileId,
@@ -327,9 +298,10 @@ class ConfigController extends Controller {
 					'rejected_at' => $rejectedAt,
 				];
 			} catch (NotFoundException $e) {
-				// File might have been deleted, skip this instance
 				continue;
 			} catch (\Throwable $e) {
+				// It's good practice to log unexpected errors
+				\OC::$server->getLogger()->error('Error processing file in getAllApprovalFiles: ' . $e->getMessage() . ' Trace: ' . $e->getTraceAsString(), ['app' => $this->appName]);
 				continue;
 			}
 		}
