@@ -27,59 +27,61 @@
 			</div>
 		</div>
 
-		<div v-if="loading">
-			<p>
-				{{ t('approval', 'Loading data...') }}
-			</p>
-		</div>
-		<div v-else>
-			<div v-if="Object.keys(filesGroupedByWorkflow).length">
-				<div v-for="(workflowData, workflowName) in filesGroupedByWorkflow" :key="workflowName" class="workflow-group">
-					<h2>{{ workflowName }}</h2>
-					<div class="table-scroll-wrapper">
-						<table v-if="workflowData.paginatedFiles.length" class="analytics-table">
-							<thead>
-								<tr>
-									<th>{{ t('approval', 'File Name') }}</th>
-									<th>{{ t('approval', 'File Path') }}</th>
-									<th>{{ t('approval', 'Status') }}</th>
-									<th>{{ t('approval', 'Sent At') }}</th>
-									<th>{{ t('approval', 'Approved At') }}</th>
-									<th>{{ t('approval', 'Rejected At') }}</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr v-for="file in workflowData.paginatedFiles" :key="file.file_id + '-' + file.rule_id">
-									<td>{{ getFileName(file.path) }}</td>
-									<td>{{ getDisplayPath(file.path) }}</td>
-									<td>{{ getStatusLabel(file.status_code) }}</td>
-									<td>{{ formatTimestamp(file.sent_at) }}</td>
-									<td>{{ formatTimestamp(file.status_code === 2 ? file.approved_at : null) }}</td>
-									<td>{{ formatTimestamp(file.status_code === 3 ? file.rejected_at : null) }}</td>
-								</tr>
-							</tbody>
-						</table>
-					</div>
-					<div v-if="workflowData.totalPages > 1" class="pagination-controls">
-						<button :disabled="workflowData.currentPage === 1" @click="prevPage(workflowName)">
-							{{ t('approval', 'Previous') }}
-						</button>
-						<span>
-							{{ t('approval', 'Page {currentPage} of {totalPages}', { currentPage: workflowData.currentPage, totalPages: workflowData.totalPages })
-							}}
-						</span>
-						<button :disabled="workflowData.currentPage === workflowData.totalPages" @click="nextPage(workflowName)">
-							{{ t('approval', 'Next') }}
-						</button>
-					</div>
-					<p v-if="!(workflowData.allFiles && workflowData.allFiles.length)">
-						{{ t('approval', 'No approval files found for this workflow.') }}
-					</p>
-				</div>
+		<div class="analytics-content-area">
+			<div v-if="loading">
+				<p>
+					{{ t('approval', 'Loading data...') }}
+				</p>
 			</div>
-			<p v-else>
-				{{ t('approval', 'No approval files found.') }}
-			</p>
+			<div v-else>
+				<div v-if="Object.keys(filesGroupedByWorkflow).length">
+					<div v-for="(workflowData, workflowName) in filesGroupedByWorkflow" :key="workflowName" class="workflow-group">
+						<h2>{{ workflowName }}</h2>
+						<div class="table-scroll-wrapper">
+							<table v-if="workflowData.paginatedFiles.length" class="analytics-table">
+								<thead>
+									<tr>
+										<th>{{ t('approval', 'File Name') }}</th>
+										<th>{{ t('approval', 'File Path') }}</th>
+										<th>{{ t('approval', 'Status') }}</th>
+										<th>{{ t('approval', 'Sent At') }}</th>
+										<th>{{ t('approval', 'Approved At') }}</th>
+										<th>{{ t('approval', 'Rejected At') }}</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr v-for="file in workflowData.paginatedFiles" :key="file.file_id + '-' + file.rule_id">
+										<td>{{ getFileName(file.path) }}</td>
+										<td>{{ getDisplayPath(file.path) }}</td>
+										<td>{{ getStatusLabel(file.status_code) }}</td>
+										<td>{{ formatTimestamp(file.sent_at) }}</td>
+										<td>{{ formatTimestamp(file.status_code === 2 ? file.approved_at : null) }}</td>
+										<td>{{ formatTimestamp(file.status_code === 3 ? file.rejected_at : null) }}</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+						<div v-if="workflowData.totalPages > 1" class="pagination-controls">
+							<button :disabled="workflowData.currentPage === 1" @click="prevPage(workflowName)">
+								{{ t('approval', 'Previous') }}
+							</button>
+							<span>
+								{{ t('approval', 'Page {currentPage} of {totalPages}', { currentPage: workflowData.currentPage, totalPages: workflowData.totalPages })
+								}}
+							</span>
+							<button :disabled="workflowData.currentPage === workflowData.totalPages" @click="nextPage(workflowName)">
+								{{ t('approval', 'Next') }}
+							</button>
+						</div>
+						<p v-if="!(workflowData.allFiles && workflowData.allFiles.length)">
+							{{ t('approval', 'No approval files found for this workflow.') }}
+						</p>
+					</div>
+				</div>
+				<p v-else>
+					{{ t('approval', 'No approval files found.') }}
+				</p>
+			</div>
 		</div>
 	</div>
 </template>
@@ -250,21 +252,40 @@ export default {
 
 <style scoped lang="scss">
 #approval-analytics-page {
-	padding: 20px;
+	padding: 0; // Padding is now on .right-pane in ApprovalCenterView
+	display: flex;
+	flex-direction: column;
+	height: 100%; // Fill .right-pane
+	overflow: hidden; // Ensure this page itself doesn't scroll
+}
+
+.workflow-kpi-summary {
+	flex-shrink: 0; // Don't let summary shrink
+	margin-bottom: 20px; // Space after summary
+	padding: 0 20px; // Re-add padding here if needed, or adjust .right-pane padding
+}
+
+// New wrapper for content below summary
+.analytics-content-area {
+	flex-grow: 1; // Takes remaining vertical space
+	display: flex;
+	flex-direction: column;
+	overflow-y: auto; // If content (multiple workflows) overflows vertically
+	padding: 0 20px; // Re-add padding
 }
 
 .table-scroll-wrapper {
 	overflow-x: auto;
-	margin-bottom: 10px; /* Adjusted space for pagination controls */
-	display: block; /* Ensure it behaves as a block element */
-	width: 100%; /* Make wrapper take full width of its container (.right-pane) */
+	margin-bottom: 10px;
+	display: block;
+	width: 100%;
+	/* flex-grow: 1; // Might not be needed now, let analytics-content-area handle vertical growth */
 }
 
 .analytics-table {
-	/* min-width: 100%; */ /* Removed to allow table to size to its content */
+	min-width: max-content; // Make table as wide as its content
 	border-collapse: collapse;
 	margin-top: 10px;
-	/* margin-bottom is removed as pagination controls will have their own margin */
 
 	th, td {
 		border: 1px solid var(--color-border);

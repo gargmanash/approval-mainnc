@@ -291,12 +291,17 @@ export default {
 </script>
 
 <style scoped lang="scss">
+#approval-center-view { // The root element of ApprovalCenterView
+	height: 100%;
+}
+
 .split-layout {
 	display: flex;
 	flex-direction: row;
 	gap: 24px;
 	width: 100%;
-	align-items: flex-start; /* Align items to the top */
+	height: 100%; /* Make split-layout take full available height */
+	align-items: stretch; /* Make left and right panes equal height */
 }
 
 .left-pane {
@@ -306,7 +311,7 @@ export default {
 	padding: 20px;
 	border-radius: var(--border-radius);
 	box-shadow: var(--box-shadow);
-	height: fit-content; /* Or a specific height if preferred, e.g., calc(100vh - some_offset) */
+	/* height: fit-content; */ /* Removed */
 	overflow-y: auto; /* Allow vertical scroll if content exceeds height */
 }
 
@@ -316,10 +321,11 @@ export default {
 	padding: 20px;
 	border-radius: var(--border-radius);
 	box-shadow: var(--box-shadow);
-	height: fit-content; /* Or match left-pane height logic */
-	/* The horizontal scrolling is handled by table-scroll-wrapper inside ApprovalAnalytics.vue */
-	/* Add overflow-x: hidden; here if you want to be absolutely sure this pane itself doesn't show a scrollbar, relying on inner ones */
+	/* height: fit-content; */ /* Removed */
+	overflow: hidden; /* Ensure this pane clips its content, forcing scroll inside */
 	min-width: 0; /* Important for flex items that might contain wide, scrollable content */
+	display: flex;
+	flex-direction: column;
 }
 
 h1, h2 {
