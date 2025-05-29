@@ -117,7 +117,7 @@ class ConfigController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function getWorkflowKpis(): DataResponse {
-		$prefix = $this->db->getQueryBuilder()->getTablePrefix();
+		$prefix = $this->db->getPrefix();
 		$sql = "
 			SELECT
 				ar.id AS rule_id,
@@ -155,8 +155,8 @@ class ConfigController extends Controller {
 				ar.id;
 		";
 
-		$stmt = $this->db->getConnection()->executeQuery($sql);
-		$results = $stmt->fetchAllAssociative(); // Changed from fetchAll to fetchAllAssociative
+		$stmt = $this->db->executeQuery($sql);
+		$results = $stmt->fetchAllAssociative();
 
 		$kpis = array_map(function($row) {
 			return [
@@ -195,7 +195,7 @@ class ConfigController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function getAllApprovalFiles(): DataResponse {
-		$prefix = $this->db->getQueryBuilder()->getTablePrefix();
+		$prefix = $this->db->getPrefix();
 		$sql = "
 			SELECT
 				dp.file_id,
@@ -240,10 +240,7 @@ class ConfigController extends Controller {
 			'stateRejected' => 3
 		];
 
-		// For parameter types, Doctrine infers simple integers correctly.
-		// If explicit types were needed: $types = ['stateApproved' => \PDO::PARAM_INT, 'stateRejected' => \PDO::PARAM_INT];
-		// $stmt = $this->db->getConnection()->executeQuery($sql, $params, $types);
-		$stmt = $this->db->getConnection()->executeQuery($sql, $params);
+		$stmt = $this->db->executeQuery($sql, $params);
 		$results = $stmt->fetchAllAssociative();
 
 		$allFilesData = array_map(function($row) {
