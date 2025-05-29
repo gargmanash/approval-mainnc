@@ -113,16 +113,24 @@
 		</div>
 		<div class="reset-section">
 			<h3>{{ t('approval', 'Reset File Approval Statuses') }}</h3>
-			<p class="warning-text">{{ t('approval', 'This will clear all pending, approved, and rejected statuses from all files, effectively resetting their approval history. Existing workflow definitions will NOT be affected.') }}</p>
-			<p class="warning-text">{{ t('approval', 'Note: System tags (pending, approved, rejected) on files will not be automatically removed. You may need to manually clean these up for a complete visual reset in the Files app.') }}</p>
+			<p class="warning-text">
+				{{ t('approval', 'This will clear all pending, approved, and rejected statuses from all files, effectively resetting their approval history. Existing workflow definitions will NOT be affected.') }}
+			</p>
+			<p class="warning-text">
+				{{ t('approval', 'Note: System tags (pending, approved, rejected) on files will not be automatically removed. You may need to manually clean these up for a complete visual reset in the Files app.') }}
+			</p>
 			<NcButton type="warning" @click="confirmResetActivity">
 				{{ t('approval', 'Reset File Statuses Only') }}
 			</NcButton>
 		</div>
 		<div class="reset-section destructive-reset">
 			<h3>{{ t('approval', 'Reset All Approval Data (includes Workflows)') }}</h3>
-			<p class="warning-text">{{ t('approval', 'Warning: This will permanently delete ALL defined approval workflows, ALL approval activity history, and ALL associations between files and workflows. This action cannot be undone.') }}</p>
-			<p class="warning-text">{{ t('approval', 'System tags created by this app will not be automatically deleted. You may need to manually clean them up from the general system tag management settings if desired.') }}</p>
+			<p class="warning-text">
+				{{ t('approval', 'Warning: This will permanently delete ALL defined approval workflows, ALL approval activity history, and ALL associations between files and workflows. This action cannot be undone.') }}
+			</p>
+			<p class="warning-text">
+				{{ t('approval', 'System tags created by this app will not be automatically deleted. You may need to manually clean them up from the general system tag management settings if desired.') }}
+			</p>
 			<NcButton type="destructive" @click="confirmResetAllData">
 				{{ t('approval', 'Reset All Data') }}
 			</NcButton>
@@ -143,7 +151,7 @@ import ApprovalRule from './ApprovalRule.vue'
 
 import { generateUrl } from '@nextcloud/router'
 import axios from '@nextcloud/axios'
-import { showSuccess, showError, confirmDestructive } from '@nextcloud/dialogs'
+import { showSuccess, showError, getDialogBuilder } from '@nextcloud/dialogs'
 import { translate } from '@nextcloud/l10n'
 
 export default {
@@ -386,39 +394,51 @@ export default {
 			this.$refs.createTagInput.focus()
 		},
 		async confirmResetAllData() {
-			confirmDestructive(
-				t('approval', 'Reset All Approval Data'),
-				t('approval', 'Are you sure you want to permanently delete all approval workflows, activity, and history? This action cannot be undone.'),
-				async () => {
-					try {
-						await axios.post(generateUrl('/apps/approval/settings/reset-all-data'))
-						showSuccess(t('approval', 'All approval data has been successfully reset.'))
-						this.loadRules() // Reload to show empty state
-					} catch (e) {
-						console.error('Error resetting approval data:', e)
-						showError(t('approval', 'Failed to reset approval data. Please check server logs.'))
-					}
-				},
-				t('approval', 'Reset All Data')
+			const builder = getDialogBuilder(
+				translate('approval', 'Reset All Approval Data'),
+				translate('approval', 'Are you sure you want to permanently delete all approval workflows, activity, and history? This action cannot be undone.'),
 			)
+			builder.setButtonOrder(
+				builder.BUTTON_PRIMARY,
+				builder.BUTTON_CANCEL,
+			)
+			builder.setPrimaryButton(translate('approval', 'Reset All Data'), async () => {
+				try {
+					await axios.post(generateUrl('/apps/approval/settings/reset-all-data'))
+					showSuccess(translate('approval', 'All approval data has been successfully reset.'))
+					this.loadRules() // Reload to show empty state
+				} catch (e) {
+					console.error('Error resetting approval data:', e)
+					showError(translate('approval', 'Failed to reset approval data. Please check server logs.'))
+				}
+			}, {
+				destructive: true,
+				closeOnSuccess: true,
+			})
+			builder.build().show()
 		},
 		async confirmResetActivity() {
-			confirmDestructive(
+			const builder = getDialogBuilder(
 				t('approval', 'Reset File Approval Statuses'),
-				t('approval', 'Are you sure you want to clear all current approval statuses and history for all files? Workflow definitions will remain. System tags on files will not be removed automatically.'),
-				async () => {
-					try {
-						await axios.post(generateUrl('/apps/approval/settings/reset-activity'))
-						showSuccess(t('approval', 'All file approval statuses and history have been reset.'))
-						// No need to reload rules as they are not affected
-						// UI might need a different way to reflect this change if it shows combined stats.
-					} catch (e) {
-						console.error('Error resetting approval activity:', e)
-						showError(t('approval', 'Failed to reset approval activity. Please check server logs.'))
-					}
-				},
-				t('approval', 'Reset File Statuses')
+				t('approval', 'Are you sure you want to clear all current approval statuses and history for all files? Workflow definitions will remain. System tags on files will not be removed automatically.')
 			)
+			builder.setButtonOrder(
+				builder.BUTTON_PRIMARY, // Destructive action button
+				builder.BUTTON_CANCEL
+			)
+			builder.setPrimaryButton(t('approval', 'Reset File Statuses'), async () => {
+				try {
+					await axios.post(generateUrl('/apps/approval/settings/reset-activity'))
+					showSuccess(t('approval', 'All file approval statuses and history have been reset.'))
+				} catch (e) {
+					console.error('Error resetting approval activity:', e)
+					showError(t('approval', 'Failed to reset approval activity. Please check server logs.'))
+				}
+			}, {
+				destructive: true,
+				closeOnSuccess: true,
+			})
+			builder.build().show()
 		},
 	},
 }
