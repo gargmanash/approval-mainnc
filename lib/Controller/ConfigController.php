@@ -117,32 +117,75 @@ class ConfigController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function getWorkflowKpis(): DataResponse {
-		$rules = $this->ruleService->getRules();
-		$kpis = [];
-		$actionCountsByRule = [];
+		$qb = $this->db->getQueryBuilder();
 
-		// Initialize counts for all rules
-		foreach ($rules as $rule) {
-			$actionCountsByRule[(int)$rule['id']] = [
-				1 => 0, // Pending
-				2 => 0, // Approved
-				3 => 0, // Rejected
+		// Subquery to get the latest timestamp for each file_id, rule_id combination
+		$latestAaTimeQb = $this->db->getQueryBuilder();
+		$latestAaTimeQb->select(['file_id', 'rule_id', $latestAaTimeQb->expr()->max('timestamp', 'max_timestamp')])
+			->from('approval_activity')
+			->groupBy(['file_id', 'rule_id']);
+
+		// Subquery to get the latest state for each file_id and rule_id, ensuring the file exists
+		$latestActivityQb = $this->db->getQueryBuilder();
+		$latestActivityQb->select(['aa.file_id', 'aa.rule_id', 'aa.new_state'])
+			->from('approval_activity', 'aa')
+			->innerJoin(
+				'aa',
+				'(' . $latestAaTimeQb->getSQL() . ')', // Use the SQL from the previous subquery
+				'latest_aa_time',
+				$latestActivityQb->expr()->andX(
+					$latestActivityQb->expr()->eq('aa.file_id', 'latest_aa_time.file_id'),
+					$latestActivityQb->expr()->eq('aa.rule_id', 'latest_aa_time.rule_id'),
+					$latestActivityQb->expr()->eq('aa.timestamp', 'latest_aa_time.max_timestamp')
+				)
+			)
+			->innerJoin('aa', 'filecache', 'fc', $latestActivityQb->expr()->eq('aa.file_id', 'fc.fileid'));
+
+		// Main query
+		$qb->select([
+			'ar.id AS rule_id',
+			'ar.description',
+			$qb->expr()->sumCase('latest_activity.new_state = 1', $qb->literal(1), 'pending_count'),
+			$qb->expr()->sumCase('latest_activity.new_state = 2', $qb->literal(1), 'approved_count'),
+			$qb->expr()->sumCase('latest_activity.new_state = 3', $qb->literal(1), 'rejected_count')
+		])
+			->from('approval_rules', 'ar')
+			->leftJoin(
+				'ar',
+				'(' . $latestActivityQb->getSQL() . ')', // Use the SQL from the latest_activity subquery
+				'latest_activity',
+				$qb->expr()->eq('ar.id', 'latest_activity.rule_id')
+			)
+			->groupBy(['ar.id', 'ar.description'])
+			->orderBy('ar.id', 'ASC');
+
+		// Set parameters for the subqueries if QueryBuilder handles them globally or pass them down
+		// For now, assuming getSQL() bakes in literals if not using named parameters for sub-sub-queries.
+		// If parameters are needed for sub-sub-queries, this approach of getSQL() might need refinement
+		// or QueryBuilder must support nested parameter propagation.
+
+		$stmt = $qb->execute();
+		$results = $stmt->fetchAll();
+		$stmt->closeCursor();
+
+		$kpis = [];
+		foreach ($results as $row) {
+			// Ensure counts are integers
+			$kpis[] = [
+				'rule_id' => (int)$row['rule_id'],
+				'description' => $row['description'],
+				'pending_count' => (int)($row['pending_count'] ?? 0),
+				'approved_count' => (int)($row['approved_count'] ?? 0),
+				'rejected_count' => (int)($row['rejected_count'] ?? 0),
 			];
 		}
 
-		$qb = $this->db->getQueryBuilder();
+		// Ensure all rules are present, even if they have no activity
+		$allRules = $this->ruleService->getRules();
+		$kpisRuleIds = array_column($kpis, 'rule_id');
 
-		// Step 1: Get all distinct file_id values that have ever been in any approval process.
-		// We are interested in the *current* state of files.
-		$qbDistinctFiles = $this->db->getQueryBuilder();
-		$qbDistinctFiles->selectDistinct(['file_id'])
-			->from('approval_activity');
-		$stmtDistinctFiles = $qbDistinctFiles->execute();
-		$distinctFileIds = $stmtDistinctFiles->fetchAll(\PDO::FETCH_COLUMN);
-		$stmtDistinctFiles->closeCursor();
-
-		if (empty($distinctFileIds)) {
-			foreach ($rules as $rule) {
+		foreach ($allRules as $rule) {
+			if (!in_array((int)$rule['id'], $kpisRuleIds)) {
 				$kpis[] = [
 					'rule_id' => (int)$rule['id'],
 					'description' => $rule['description'],
@@ -151,72 +194,11 @@ class ConfigController extends Controller {
 					'rejected_count' => 0,
 				];
 			}
-			return new DataResponse($kpis);
 		}
-
-		// Step 2: For each distinct file, find its latest state for EACH rule it has interacted with.
-		// A file can be in multiple workflows simultaneously.
-		// We need to find the latest state of a file *under each specific rule*.
-
-		// Get all rule_ids to iterate over
-		$allRuleIds = array_map(function($rule) { return (int)$rule['id']; }, $rules);
-
-
-		foreach ($allRuleIds as $ruleId) {
-			foreach ($distinctFileIds as $fileId) {
-				$fileId = (int)$fileId; // Ensure $fileId is an integer
-
-				// Check if the file node still exists
-				try {
-					$nodes = $this->rootFolder->getById($fileId);
-					if (empty($nodes)) {
-						continue; // Skip if node not found for this fileId
-					}
-				} catch (\OCP\Files\NotFoundException $e) {
-					continue; // Skip if node not found (exception)
-				}
-
-				// Subquery to get the latest state for this specific file_id and rule_id
-				$qbState = $this->db->getQueryBuilder();
-				$qbState->select('new_state')
-					->from('approval_activity')
-					->where($qbState->expr()->eq('file_id', $qbState->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)))
-					->andWhere($qbState->expr()->eq('rule_id', $qbState->createNamedParameter($ruleId, IQueryBuilder::PARAM_INT)))
-					->orderBy('timestamp', 'DESC')
-					->setMaxResults(1);
-
-				$stmtState = $qbState->execute();
-				$latestStateRow = $stmtState->fetch();
-				$stmtState->closeCursor();
-
-				if ($latestStateRow && isset($actionCountsByRule[$ruleId])) {
-					$latestState = (int)$latestStateRow['new_state'];
-					// Only count if this is indeed the *current* state for this file under this rule.
-					// If a file was approved then rejected, its current state for that rule is rejected.
-					// If a file was sent to workflow A, then to workflow B, it might be pending in both.
-
-					// Check if this file_id and rule_id combination has any activity.
-					// If $latestStateRow is not false, it means there's activity.
-					if (isset($actionCountsByRule[$ruleId][$latestState])) {
-						// Check if this file has not been subsequently moved to a *different* state *under the same rule*.
-						// The previous query already gets the latest state for this file-rule pair. So, this check is sufficient.
-						$actionCountsByRule[$ruleId][$latestState]++;
-					}
-				}
-			}
-		}
-
-
-		foreach ($rules as $rule) {
-			$ruleId = (int)$rule['id'];
-			$kpis[] = [
-				'rule_id' => $ruleId,
-				'description' => $rule['description'],
-				'pending_count' => $actionCountsByRule[$ruleId][1] ?? 0,
-				'approved_count' => $actionCountsByRule[$ruleId][2] ?? 0,
-				'rejected_count' => $actionCountsByRule[$ruleId][3] ?? 0,
-			];
-		}
+		// Sort again by rule_id if new rules were added
+		usort($kpis, function($a, $b) {
+			return $a['rule_id'] <=> $b['rule_id'];
+		});
 
 		return new DataResponse($kpis);
 	}
@@ -224,87 +206,92 @@ class ConfigController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function getAllApprovalFiles(): DataResponse {
-		$allFilesData = [];
 		$qb = $this->db->getQueryBuilder();
 
-		$qb->selectDistinct(['aa.file_id', 'aa.rule_id'])
-			->from('approval_activity', 'aa');
+		// Subquery for distinct file_id, rule_id pairs
+		$distinctPairsQb = $this->db->getQueryBuilder();
+		$distinctPairsQb->selectDistinct(['file_id', 'rule_id'])
+			->from('approval_activity');
+
+		// Correlated subquery for status_code
+		$statusQb = $this->db->getQueryBuilder();
+		$statusQb->select('aa_latest.new_state')
+			->from('approval_activity', 'aa_latest')
+			->where($statusQb->expr()->eq('aa_latest.file_id', 'aa_main.file_id'))
+			->andWhere($statusQb->expr()->eq('aa_latest.rule_id', 'aa_main.rule_id'))
+			->orderBy('aa_latest.timestamp', 'DESC')
+			->setMaxResults(1);
+
+		// Correlated subquery for activity_timestamp (timestamp of the latest status)
+		$activityTsQb = $this->db->getQueryBuilder();
+		$activityTsQb->select('aa_latest_ts.timestamp')
+			->from('approval_activity', 'aa_latest_ts')
+			->where($activityTsQb->expr()->eq('aa_latest_ts.file_id', 'aa_main.file_id'))
+			->andWhere($activityTsQb->expr()->eq('aa_latest_ts.rule_id', 'aa_main.rule_id'))
+			->orderBy('aa_latest_ts.timestamp', 'DESC')
+			->setMaxResults(1);
+
+		// Correlated subquery for sent_at
+		$sentAtQb = $this->db->getQueryBuilder();
+		$sentAtQb->select($sentAtQb->expr()->min('aa_sent.timestamp'))
+			->from('approval_activity', 'aa_sent')
+			->where($sentAtQb->expr()->eq('aa_sent.file_id', 'aa_main.file_id'))
+			->andWhere($sentAtQb->expr()->eq('aa_sent.rule_id', 'aa_main.rule_id'));
+
+		// Correlated subquery for approved_at
+		$approvedAtQb = $this->db->getQueryBuilder();
+		$approvedAtQb->select($approvedAtQb->expr()->max('aa_approved.timestamp'))
+			->from('approval_activity', 'aa_approved')
+			->where($approvedAtQb->expr()->eq('aa_approved.file_id', 'aa_main.file_id'))
+			->andWhere($approvedAtQb->expr()->eq('aa_approved.rule_id', 'aa_main.rule_id'))
+			->andWhere($approvedAtQb->expr()->eq('aa_approved.new_state', $approvedAtQb->literal(2)));
+
+		// Correlated subquery for rejected_at
+		$rejectedAtQb = $this->db->getQueryBuilder();
+		$rejectedAtQb->select($rejectedAtQb->expr()->max('aa_rejected.timestamp'))
+			->from('approval_activity', 'aa_rejected')
+			->where($rejectedAtQb->expr()->eq('aa_rejected.file_id', 'aa_main.file_id'))
+			->andWhere($rejectedAtQb->expr()->eq('aa_rejected.rule_id', 'aa_main.rule_id'))
+			->andWhere($rejectedAtQb->expr()->eq('aa_rejected.new_state', $rejectedAtQb->literal(3)));
+
+		$qb->select([
+			'aa_main.file_id',
+			'aa_main.rule_id',
+			'fc.path',
+			'(' . $statusQb->getSQL() . ') AS status_code',
+			'(' . $activityTsQb->getSQL() . ') AS activity_timestamp',
+			'(' . $sentAtQb->getSQL() . ') AS sent_at',
+			'(' . $approvedAtQb->getSQL() . ') AS approved_at',
+			'(' . $rejectedAtQb->getSQL() . ') AS rejected_at'
+		])
+			->from('(' . $distinctPairsQb->getSQL() . ')', 'aa_main')
+			->innerJoin('aa_main', 'filecache', 'fc', $qb->expr()->eq('aa_main.file_id', 'fc.fileid'))
+			->orderBy('aa_main.file_id', 'ASC')
+			->addOrderBy('aa_main.rule_id', 'ASC');
 
 		$stmt = $qb->execute();
-		$fileRulePairs = $stmt->fetchAll();
+		$results = $stmt->fetchAllAssociative(); // Use fetchAllAssociative for direct array output
 		$stmt->closeCursor();
 
-		if (empty($fileRulePairs)) {
-			return new DataResponse([]);
-		}
+		// Post-process to ensure correct types and structure if needed, though fetchAllAssociative is good.
+		// The subselects should return NULL if no record matches, which is desired.
+		// status_code, sent_at, approved_at, rejected_at might need casting to int if not null.
 
-		foreach ($fileRulePairs as $pair) {
-			$fileId = (int)$pair['file_id'];
-			$ruleId = (int)$pair['rule_id'];
-
-			try {
-				$nodes = $this->rootFolder->getById($fileId);
-				if (empty($nodes)) {
-					continue;
-				}
-				$node = $nodes[0];
-				$filePath = $node->getPath();
-
-				// Fetch ALL activities for this specific (file_id, rule_id) pair
-				$qbActivities = $this->db->getQueryBuilder();
-				$qbActivities->select(['new_state', 'timestamp'])
-					->from('approval_activity')
-					->where($qbActivities->expr()->eq('file_id', $qbActivities->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)))
-					->andWhere($qbActivities->expr()->eq('rule_id', $qbActivities->createNamedParameter($ruleId, IQueryBuilder::PARAM_INT)))
-					->orderBy('timestamp', 'ASC');
-
-				$stmtActivities = $qbActivities->execute();
-				$activities = $stmtActivities->fetchAll();
-				$stmtActivities->closeCursor();
-
-				if (empty($activities)) {
-					continue;
-				}
-
-				$sentAt = (int)$activities[0]['timestamp'];
-				$currentStatusCode = (int)end($activities)['new_state'];
-
-				$approvedAt = null;
-				$rejectedAt = null;
-
-				// Find the latest timestamp for an approval action by iterating backwards
-				foreach (array_reverse($activities) as $activity) {
-					if ((int)$activity['new_state'] === 2) { // STATE_APPROVED
-						$approvedAt = (int)$activity['timestamp'];
-						break;
-					}
-				}
-
-				// Find the latest timestamp for a rejection action by iterating backwards
-				foreach (array_reverse($activities) as $activity) {
-					if ((int)$activity['new_state'] === 3) { // STATE_REJECTED
-						$rejectedAt = (int)$activity['timestamp'];
-						break;
-					}
-				}
-
-				$allFilesData[] = [
-					'file_id' => $fileId,
-					'path' => $filePath,
-					'rule_id' => $ruleId,
-					'status_code' => $currentStatusCode,
-					'sent_at' => $sentAt,
-					'approved_at' => $approvedAt,
-					'rejected_at' => $rejectedAt,
-				];
-			} catch (NotFoundException $e) {
-				continue;
-			} catch (\Throwable $e) {
-				// It's good practice to log unexpected errors
-				\OC::$server->getLogger()->error('Error processing file in getAllApprovalFiles: ' . $e->getMessage() . ' Trace: ' . $e->getTraceAsString(), ['app' => $this->appName]);
-				continue;
-			}
-		}
+		$allFilesData = array_map(function($row) {
+			return [
+				'file_id' => (int)$row['file_id'],
+				'rule_id' => (int)$row['rule_id'],
+				'path' => $row['path'],
+				'status_code' => $row['status_code'] !== null ? (int)$row['status_code'] : null,
+				// activity_timestamp is used for frontend display of approved_at or rejected_at directly, if status is 2 or 3.
+				// We will derive it based on status_code and specific timestamps for clarity in frontend if needed,
+				// but backend provides the latest activity's timestamp and specific approval/rejection ones.
+				'activity_timestamp' => $row['activity_timestamp'] !== null ? (int)$row['activity_timestamp'] : null,
+				'sent_at' => $row['sent_at'] !== null ? (int)$row['sent_at'] : null,
+				'approved_at' => $row['approved_at'] !== null ? (int)$row['approved_at'] : null,
+				'rejected_at' => $row['rejected_at'] !== null ? (int)$row['rejected_at'] : null,
+			];
+		}, $results);
 
 		return new DataResponse($allFilesData);
 	}
