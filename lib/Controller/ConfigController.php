@@ -119,29 +119,49 @@ class ConfigController extends Controller {
 	public function getWorkflowKpis(): DataResponse {
 		$rules = $this->ruleService->getRules();
 		$kpis = [];
+		$actionCountsByRule = [];
+
+		// Initialize counts for all rules
+		foreach ($rules as $rule) {
+			$actionCountsByRule[(int)$rule['id']] = [
+				1 => 0, // Pending
+				2 => 0, // Approved
+				3 => 0, // Rejected
+			];
+		}
 
 		$qb = $this->db->getQueryBuilder();
-		// Select file_id, rule_id, and new_state. The subsequent processing will count distinct files.
-		$qb->select(['file_id', 'rule_id', 'new_state'])
-			->from('approval_activity')
-			->groupBy(['file_id', 'rule_id', 'new_state']);
 
-		$stmt = $qb->execute();
-		$results = $stmt->fetchAll();
-		$stmt->closeCursor();
+		// Step 1: Get all distinct (file_id, rule_id) pairs from approval_activity
+		$qb->selectDistinct(['file_id', 'rule_id'])
+			->from('approval_activity');
+		$stmtPairs = $qb->execute();
+		$fileRulePairs = $stmtPairs->fetchAll();
+		$stmtPairs->closeCursor();
 
-		$actionCountsByRule = [];
-		foreach ($results as $row) {
-			if (!isset($actionCountsByRule[$row['rule_id']])) {
-				$actionCountsByRule[$row['rule_id']] = [
-					1 => 0, // Pending
-					2 => 0, // Approved
-					3 => 0, // Rejected
-				];
+		// Step 2: For each pair, determine its latest state and count it
+		foreach ($fileRulePairs as $pair) {
+			$fileId = (int)$pair['file_id'];
+			$ruleId = (int)$pair['rule_id'];
+
+			// Subquery to get the latest state for this file_id and rule_id
+			$qbState = $this->db->getQueryBuilder();
+			$qbState->select('new_state')
+				->from('approval_activity')
+				->where($qbState->expr()->eq('file_id', $qbState->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)))
+				->andWhere($qbState->expr()->eq('rule_id', $qbState->createNamedParameter($ruleId, IQueryBuilder::PARAM_INT)))
+				->orderBy('timestamp', 'DESC')
+				->setMaxResults(1);
+			$stmtState = $qbState->execute();
+			$latestStateRow = $stmtState->fetch();
+			$stmtState->closeCursor();
+
+			if ($latestStateRow && isset($actionCountsByRule[$ruleId])) {
+				$latestState = (int)$latestStateRow['new_state'];
+				if (isset($actionCountsByRule[$ruleId][$latestState])) {
+					$actionCountsByRule[$ruleId][$latestState]++;
+				}
 			}
-			// We are counting distinct files per state for a rule
-			// The query gives us one row per distinct file_id per rule_id per new_state
-			$actionCountsByRule[$row['rule_id']][(int)$row['new_state']]++;
 		}
 
 		foreach ($rules as $rule) {
