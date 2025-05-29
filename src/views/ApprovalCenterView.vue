@@ -70,14 +70,15 @@ export default {
 			this.allApprovalFiles.forEach(file => {
 				const pathParts = file.path.split('/').filter(p => p !== '')
 				let currentLevelForFolderCreation = tree
-				let cumulativeFolderPath = ''
-				let parentFolderNode = null // This will be the folder node that is the direct parent of the file
+				let currentPathArray = []
+				let parentFolderNode = null
 
-				// Traverse all but the last part (which is the file name) to build/find folder nodes
 				for (let i = 0; i < pathParts.length - 1; i++) {
 					const part = pathParts[i]
-					cumulativeFolderPath += '/' + part // Path of the current folder part
-					let existingFolderNode = map[cumulativeFolderPath] // Check if this folder node already exists in our map
+					currentPathArray.push(part)
+					const cumulativeFolderPath = '/' + currentPathArray.join('/')
+
+					let existingFolderNode = map[cumulativeFolderPath]
 					if (!existingFolderNode) {
 						existingFolderNode = {
 							name: part,
@@ -87,14 +88,13 @@ export default {
 							kpis: { pending: 0, approved: 0, rejected: 0 },
 							expanded: !!this.expandedFolderStates[cumulativeFolderPath],
 						}
-						map[cumulativeFolderPath] = existingFolderNode // Store the new folder node in the map
-						currentLevelForFolderCreation.push(existingFolderNode) // Add the new folder to its parent's children array
+						map[cumulativeFolderPath] = existingFolderNode
+						currentLevelForFolderCreation.push(existingFolderNode)
 					}
-					parentFolderNode = existingFolderNode // This folder is the parent for the next part of the path or the file itself
-					currentLevelForFolderCreation = existingFolderNode.children // Subsequent folders will be added to this folder's children
+					parentFolderNode = existingFolderNode
+					currentLevelForFolderCreation = existingFolderNode.children
 				}
 
-				// Now add the file node. Each 'file' object from allApprovalFiles creates a distinct fileNode.
 				const fileName = pathParts[pathParts.length - 1]
 				const fileNode = {
 					name: fileName,
@@ -293,27 +293,30 @@ export default {
 	flex-direction: row;
 	gap: 24px;
 	width: 100%;
+	align-items: flex-start; /* Align items to the top */
 }
 
 .left-pane {
-	flex: 1 1 0;
-	min-width: 220px;
-	max-width: 320px;
+	width: 320px; /* Fixed width */
+	flex-shrink: 0; /* Prevent shrinking */
 	background: var(--color-main-background);
 	padding: 20px;
 	border-radius: var(--border-radius);
 	box-shadow: var(--box-shadow);
-	height: fit-content;
+	height: fit-content; /* Or a specific height if preferred, e.g., calc(100vh - some_offset) */
+	overflow-y: auto; /* Allow vertical scroll if content exceeds height */
 }
 
 .right-pane {
-	flex: 4 1 0;
+	flex-grow: 1; /* Allow growing to take remaining space */
 	background: var(--color-main-background);
 	padding: 20px;
 	border-radius: var(--border-radius);
 	box-shadow: var(--box-shadow);
-	height: fit-content;
-	/* overflow-x: auto;  No longer needed */
+	height: fit-content; /* Or match left-pane height logic */
+	/* The horizontal scrolling is handled by table-scroll-wrapper inside ApprovalAnalytics.vue */
+	/* Add overflow-x: hidden; here if you want to be absolutely sure this pane itself doesn't show a scrollbar, relying on inner ones */
+	min-width: 0; /* Important for flex items that might contain wide, scrollable content */
 }
 
 h1, h2 {
