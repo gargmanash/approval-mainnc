@@ -2,21 +2,24 @@
 	<div id="approval-center-view">
 		<NcAppContent app-name="approval">
 			<template #app-navigation>
-				<NcAppNavigation>
-					<div class="custom-app-navigation-header">
-						<h2>{{ t('approval', 'File Approval Status Tree') }}</h2>
+				<NcAppNavigation :title="t('approval', 'Navigation Area')">
+					<div style="background-color: blue; color: white; padding: 20px; height: 100%;">
+						<p>This is the navigation slot.</p>
+						<p v-if="!allApprovalFiles.length">Tree Data Status: No files loaded yet.</p>
+						<p v-else>Tree Data Status: Files are loaded ({{ allApprovalFiles.length }}).</p>
+						<!-- Original Tree Logic - temporarily simplified above -->
+						<!-- <ApprovalFileTree
+							v-if="fileTreeWithKpis && fileTreeWithKpis.length > 0"
+							:tree-data="fileTreeWithKpis"
+							:workflows="workflows"
+							@approve-file="handleApproveFile"
+							@reject-file="handleRejectFile"
+							@view-file="handleViewFile"
+							@toggle-expand="handleToggleExpand" />
+						<p v-else class="empty-tree-message">
+							{{ fileTreeWithKpis === null ? t('approval', 'Loading tree...') : t('approval', 'No files for approval.') }}
+						</p> -->
 					</div>
-					<ApprovalFileTree
-						v-if="fileTreeWithKpis.length"
-						:tree-data="fileTreeWithKpis"
-						:workflows="workflows"
-						@approve-file="handleApproveFile"
-						@reject-file="handleRejectFile"
-						@view-file="handleViewFile"
-						@toggle-expand="handleToggleExpand" />
-					<p v-else class="empty-tree-message">
-						{{ t('approval', 'No files found in the approval system.') }}
-					</p>
 				</NcAppNavigation>
 			</template>
 
@@ -33,7 +36,7 @@ import { NcAppContent, NcAppNavigation } from '@nextcloud/vue'
 import { generateUrl } from '@nextcloud/router'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import axios from '@nextcloud/axios'
-import ApprovalFileTree from '../components/ApprovalFileTree.vue'
+// import ApprovalFileTree from '../components/ApprovalFileTree.vue'
 import ApprovalAnalytics from './ApprovalAnalytics.vue'
 import { approve, reject } from '../files/helpers.js'
 import { translate } from '@nextcloud/l10n'
@@ -47,7 +50,7 @@ export default {
 	components: {
 		NcAppContent,
 		NcAppNavigation,
-		ApprovalFileTree,
+		// ApprovalFileTree, // Temporarily commented out for debugging
 		ApprovalAnalytics,
 	},
 	data() {
@@ -291,9 +294,10 @@ export default {
 #approval-center-view {
 	height: 100%;
 	width: 100%;
-	display: flex;
+	/* display: flex; // REMOVED THIS to let NcAppContent manage its layout */
 }
 
+/* Custom styles for the header within NcAppNavigation if needed - REMOVED as custom header is removed
 .custom-app-navigation-header {
 	padding: 12px 16px;
 	border-bottom: 1px solid var(--color-border);
@@ -303,14 +307,17 @@ export default {
 		line-height: 24px;
 	}
 }
+*/
 
 .empty-tree-message {
-	padding: 16px;
+	padding: 16px; /* Added padding directly here */
 	font-style: italic;
 	color: var(--color-text-maxcontrast-secondary);
 }
 
-h1, h2 {
+/* Old layout styles are already commented out or removed */
+
+h1, h2 { /* These might be too general now, ensure they don't conflict */
 	color: var(--color-main-text);
 }
 
