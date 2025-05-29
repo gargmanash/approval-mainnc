@@ -157,7 +157,7 @@ class ConfigController extends Controller {
 
 		$stmt = $this->db->executeQuery($sql);
 		$results = [];
-		while ($row = $stmt->fetchRow()) {
+		while ($row = $stmt->fetchAssociative()) {
 			$results[] = $row;
 		}
 
@@ -245,7 +245,7 @@ class ConfigController extends Controller {
 
 		$stmt = $this->db->executeQuery($sql, $params);
 		$results = [];
-		while ($row = $stmt->fetchRow()) {
+		while ($row = $stmt->fetchAssociative()) {
 			$results[] = $row;
 		}
 
