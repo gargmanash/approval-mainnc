@@ -121,7 +121,7 @@ class ConfigController extends Controller {
 
 		// Subquery to get the latest timestamp for each file_id, rule_id combination
 		$latestAaTimeQb = $this->db->getQueryBuilder();
-		$latestAaTimeQb->select(['file_id', 'rule_id', $latestAaTimeQb->expr()->max('timestamp', 'max_timestamp')])
+		$latestAaTimeQb->select(['file_id', 'rule_id', 'MAX(timestamp) AS max_timestamp'])
 			->from('approval_activity')
 			->groupBy(['file_id', 'rule_id']);
 
@@ -233,14 +233,14 @@ class ConfigController extends Controller {
 
 		// Correlated subquery for sent_at
 		$sentAtQb = $this->db->getQueryBuilder();
-		$sentAtQb->select($sentAtQb->expr()->min('aa_sent.timestamp'))
+		$sentAtQb->select('MIN(aa_sent.timestamp)')
 			->from('approval_activity', 'aa_sent')
 			->where($sentAtQb->expr()->eq('aa_sent.file_id', 'aa_main.file_id'))
 			->andWhere($sentAtQb->expr()->eq('aa_sent.rule_id', 'aa_main.rule_id'));
 
 		// Correlated subquery for approved_at
 		$approvedAtQb = $this->db->getQueryBuilder();
-		$approvedAtQb->select($approvedAtQb->expr()->max('aa_approved.timestamp'))
+		$approvedAtQb->select('MAX(aa_approved.timestamp)')
 			->from('approval_activity', 'aa_approved')
 			->where($approvedAtQb->expr()->eq('aa_approved.file_id', 'aa_main.file_id'))
 			->andWhere($approvedAtQb->expr()->eq('aa_approved.rule_id', 'aa_main.rule_id'))
@@ -248,7 +248,7 @@ class ConfigController extends Controller {
 
 		// Correlated subquery for rejected_at
 		$rejectedAtQb = $this->db->getQueryBuilder();
-		$rejectedAtQb->select($rejectedAtQb->expr()->max('aa_rejected.timestamp'))
+		$rejectedAtQb->select('MAX(aa_rejected.timestamp)')
 			->from('approval_activity', 'aa_rejected')
 			->where($rejectedAtQb->expr()->eq('aa_rejected.file_id', 'aa_main.file_id'))
 			->andWhere($rejectedAtQb->expr()->eq('aa_rejected.rule_id', 'aa_main.rule_id'))
