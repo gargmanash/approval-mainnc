@@ -252,40 +252,39 @@ export default {
 
 <style scoped lang="scss">
 #approval-analytics-page {
-	padding: 20px; // ADDED overall padding here
+	// padding: 20px; // REMOVED - Let NcAppContent or its direct child manage this padding.
 	display: flex;
 	flex-direction: column;
-	height: 100%; // Fill .right-pane
-	overflow: hidden; // Ensure this page itself doesn't scroll
+	height: 100%; // Fill the area provided by NcAppContent
+	// overflow: hidden; // This might still be useful, but let's test without it first
 }
 
 .workflow-kpi-summary {
-	flex-shrink: 0; // Don't let summary shrink
-	margin-bottom: 20px; // Space after summary
-	/* padding: 0 20px; */ // REMOVED - parent handles padding
+	flex-shrink: 0;
+	margin-bottom: 20px;
 }
 
-// New wrapper for content below summary
 .analytics-content-area {
-	flex-grow: 1; // Takes remaining vertical space
+	flex-grow: 1;
 	display: flex;
 	flex-direction: column;
-	overflow-y: auto; // If content (multiple workflows) overflows vertically
-	/* padding: 0 20px; */ // REMOVED - parent handles padding
+	overflow-y: auto; // For vertical scroll of multiple tables
+	// padding: 0 20px; // This was removed before, keep it removed.
 }
 
 .table-scroll-wrapper {
 	overflow-x: auto;
 	margin-bottom: 10px;
-	display: block;
+	display: block; // Keep as block to allow width: 100%
 	width: 100%;
-	/* flex-grow: 1; // Might not be needed now, let analytics-content-area handle vertical growth */
 }
 
 .analytics-table {
-	min-width: max-content; // Make table as wide as its content
 	border-collapse: collapse;
 	margin-top: 10px;
+	table-layout: auto; /* Allow table to size based on content */
+	width: max-content; /* Ensure table can be wider than its container */
+	min-width: 100%; /* But at least take full width of scroll wrapper */
 
 	th, td {
 		border: 1px solid var(--color-border);
