@@ -419,20 +419,20 @@ export default {
 		},
 		async confirmResetActivity() {
 			const builder = getDialogBuilder(
-				t('approval', 'Reset File Approval Statuses'),
-				t('approval', 'Are you sure you want to clear all current approval statuses and history for all files? Workflow definitions will remain. System tags on files will not be removed automatically.')
+				translate('approval', 'Reset File Approval Statuses'),
+				translate('approval', 'Are you sure you want to clear all current approval statuses and history for all files? Workflow definitions will remain. System tags on files will not be removed automatically.'),
 			)
 			builder.setButtonOrder(
 				builder.BUTTON_PRIMARY, // Destructive action button
-				builder.BUTTON_CANCEL
+				builder.BUTTON_CANCEL,
 			)
-			builder.setPrimaryButton(t('approval', 'Reset File Statuses'), async () => {
+			builder.setPrimaryButton(translate('approval', 'Reset File Statuses'), async () => {
 				try {
 					await axios.post(generateUrl('/apps/approval/settings/reset-activity'))
-					showSuccess(t('approval', 'All file approval statuses and history have been reset.'))
+					showSuccess(translate('approval', 'All file approval statuses and history have been reset.'))
 				} catch (e) {
 					console.error('Error resetting approval activity:', e)
-					showError(t('approval', 'Failed to reset approval activity. Please check server logs.'))
+					showError(translate('approval', 'Failed to reset approval activity. Please check server logs.'))
 				}
 			}, {
 				destructive: true,
