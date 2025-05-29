@@ -16,6 +16,7 @@
 		:user-select="false"
 		:filterable="false"
 		:append-to-body="false"
+		:get-option-label="option => option.displayName"
 		v-bind="$attrs"
 		@search="asyncFind"
 		@input="$emit('update:value', $event)">

@@ -398,10 +398,7 @@ export default {
 				translate('approval', 'Reset All Approval Data'),
 				translate('approval', 'Are you sure you want to permanently delete all approval workflows, activity, and history? This action cannot be undone.'),
 			)
-			builder.setButtonOrder(
-				builder.BUTTON_PRIMARY,
-				builder.BUTTON_CANCEL,
-			)
+			builder.setCancelButton(translate('approval', 'Cancel'))
 			builder.setPrimaryButton(translate('approval', 'Reset All Data'), async () => {
 				try {
 					await axios.post(generateUrl('/apps/approval/settings/reset-all-data'))
@@ -413,7 +410,7 @@ export default {
 				}
 			}, {
 				destructive: true,
-				closeOnSuccess: true,
+				// closeOnSuccess: true, // This is often default behavior or handled by the builder itself
 			})
 			builder.build().show()
 		},
@@ -422,10 +419,7 @@ export default {
 				translate('approval', 'Reset File Approval Statuses'),
 				translate('approval', 'Are you sure you want to clear all current approval statuses and history for all files? Workflow definitions will remain. System tags on files will not be removed automatically.'),
 			)
-			builder.setButtonOrder(
-				builder.BUTTON_PRIMARY, // Destructive action button
-				builder.BUTTON_CANCEL,
-			)
+			builder.setCancelButton(translate('approval', 'Cancel'))
 			builder.setPrimaryButton(translate('approval', 'Reset File Statuses'), async () => {
 				try {
 					await axios.post(generateUrl('/apps/approval/settings/reset-activity'))
@@ -436,7 +430,7 @@ export default {
 				}
 			}, {
 				destructive: true,
-				closeOnSuccess: true,
+				// closeOnSuccess: true, // This is often default behavior or handled by the builder itself
 			})
 			builder.build().show()
 		},

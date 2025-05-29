@@ -132,37 +132,70 @@ class ConfigController extends Controller {
 
 		$qb = $this->db->getQueryBuilder();
 
-		// Step 1: Get all distinct (file_id, rule_id) pairs from approval_activity
-		$qb->selectDistinct(['file_id', 'rule_id'])
+		// Step 1: Get all distinct file_id values that have ever been in any approval process.
+		// We are interested in the *current* state of files.
+		$qbDistinctFiles = $this->db->getQueryBuilder();
+		$qbDistinctFiles->selectDistinct(['file_id'])
 			->from('approval_activity');
-		$stmtPairs = $qb->execute();
-		$fileRulePairs = $stmtPairs->fetchAll();
-		$stmtPairs->closeCursor();
+		$stmtDistinctFiles = $qbDistinctFiles->execute();
+		$distinctFileIds = $stmtDistinctFiles->fetchAll(\PDO::FETCH_COLUMN);
+		$stmtDistinctFiles->closeCursor();
 
-		// Step 2: For each pair, determine its latest state and count it
-		foreach ($fileRulePairs as $pair) {
-			$fileId = (int)$pair['file_id'];
-			$ruleId = (int)$pair['rule_id'];
+		if (empty($distinctFileIds)) {
+			foreach ($rules as $rule) {
+				$kpis[] = [
+					'rule_id' => (int)$rule['id'],
+					'description' => $rule['description'],
+					'pending_count' => 0,
+					'approved_count' => 0,
+					'rejected_count' => 0,
+				];
+			}
+			return new DataResponse($kpis);
+		}
 
-			// Subquery to get the latest state for this file_id and rule_id
-			$qbState = $this->db->getQueryBuilder();
-			$qbState->select('new_state')
-				->from('approval_activity')
-				->where($qbState->expr()->eq('file_id', $qbState->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)))
-				->andWhere($qbState->expr()->eq('rule_id', $qbState->createNamedParameter($ruleId, IQueryBuilder::PARAM_INT)))
-				->orderBy('timestamp', 'DESC')
-				->setMaxResults(1);
-			$stmtState = $qbState->execute();
-			$latestStateRow = $stmtState->fetch();
-			$stmtState->closeCursor();
+		// Step 2: For each distinct file, find its latest state for EACH rule it has interacted with.
+		// A file can be in multiple workflows simultaneously.
+		// We need to find the latest state of a file *under each specific rule*.
 
-			if ($latestStateRow && isset($actionCountsByRule[$ruleId])) {
-				$latestState = (int)$latestStateRow['new_state'];
-				if (isset($actionCountsByRule[$ruleId][$latestState])) {
-					$actionCountsByRule[$ruleId][$latestState]++;
+		// Get all rule_ids to iterate over
+		$allRuleIds = array_map(function($rule) { return (int)$rule['id']; }, $rules);
+
+
+		foreach ($allRuleIds as $ruleId) {
+			foreach ($distinctFileIds as $fileId) {
+				$fileId = (int)$fileId; // Ensure $fileId is an integer
+
+				// Subquery to get the latest state for this specific file_id and rule_id
+				$qbState = $this->db->getQueryBuilder();
+				$qbState->select('new_state')
+					->from('approval_activity')
+					->where($qbState->expr()->eq('file_id', $qbState->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)))
+					->andWhere($qbState->expr()->eq('rule_id', $qbState->createNamedParameter($ruleId, IQueryBuilder::PARAM_INT)))
+					->orderBy('timestamp', 'DESC')
+					->setMaxResults(1);
+
+				$stmtState = $qbState->execute();
+				$latestStateRow = $stmtState->fetch();
+				$stmtState->closeCursor();
+
+				if ($latestStateRow && isset($actionCountsByRule[$ruleId])) {
+					$latestState = (int)$latestStateRow['new_state'];
+					// Only count if this is indeed the *current* state for this file under this rule.
+					// If a file was approved then rejected, its current state for that rule is rejected.
+					// If a file was sent to workflow A, then to workflow B, it might be pending in both.
+
+					// Check if this file_id and rule_id combination has any activity.
+					// If $latestStateRow is not false, it means there's activity.
+					if (isset($actionCountsByRule[$ruleId][$latestState])) {
+						// Check if this file has not been subsequently moved to a *different* state *under the same rule*.
+						// The previous query already gets the latest state for this file-rule pair. So, this check is sufficient.
+						$actionCountsByRule[$ruleId][$latestState]++;
+					}
 				}
 			}
 		}
+
 
 		foreach ($rules as $rule) {
 			$ruleId = (int)$rule['id'];
