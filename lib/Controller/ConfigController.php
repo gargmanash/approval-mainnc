@@ -145,9 +145,9 @@ class ConfigController extends Controller {
 		$qb->select([
 			'ar.id AS rule_id',
 			'ar.description',
-			$qb->expr()->sumCase('latest_activity.new_state = 1', $qb->literal(1), 'pending_count'),
-			$qb->expr()->sumCase('latest_activity.new_state = 2', $qb->literal(1), 'approved_count'),
-			$qb->expr()->sumCase('latest_activity.new_state = 3', $qb->literal(1), 'rejected_count')
+			$qb->expr()->sumCase('latest_activity.new_state = 1', 1, 'pending_count'),
+			$qb->expr()->sumCase('latest_activity.new_state = 2', 1, 'approved_count'),
+			$qb->expr()->sumCase('latest_activity.new_state = 3', 1, 'rejected_count')
 		])
 			->from('approval_rules', 'ar')
 			->leftJoin(
@@ -244,7 +244,7 @@ class ConfigController extends Controller {
 			->from('approval_activity', 'aa_approved')
 			->where($approvedAtQb->expr()->eq('aa_approved.file_id', 'aa_main.file_id'))
 			->andWhere($approvedAtQb->expr()->eq('aa_approved.rule_id', 'aa_main.rule_id'))
-			->andWhere($approvedAtQb->expr()->eq('aa_approved.new_state', $approvedAtQb->literal(2)));
+			->andWhere($approvedAtQb->expr()->eq('aa_approved.new_state', $approvedAtQb->createNamedParameter(2, IQueryBuilder::PARAM_INT)));
 
 		// Correlated subquery for rejected_at
 		$rejectedAtQb = $this->db->getQueryBuilder();
@@ -252,7 +252,7 @@ class ConfigController extends Controller {
 			->from('approval_activity', 'aa_rejected')
 			->where($rejectedAtQb->expr()->eq('aa_rejected.file_id', 'aa_main.file_id'))
 			->andWhere($rejectedAtQb->expr()->eq('aa_rejected.rule_id', 'aa_main.rule_id'))
-			->andWhere($rejectedAtQb->expr()->eq('aa_rejected.new_state', $rejectedAtQb->literal(3)));
+			->andWhere($rejectedAtQb->expr()->eq('aa_rejected.new_state', $rejectedAtQb->createNamedParameter(3, IQueryBuilder::PARAM_INT)));
 
 		$qb->select([
 			'aa_main.file_id',
