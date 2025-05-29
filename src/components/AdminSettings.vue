@@ -178,7 +178,7 @@ export default {
 			creatingTag: false,
 			savingRule: false,
 			loadingRules: false,
-			newRuleDeleteLabel: t('approval', 'Cancel'),
+			newRuleDeleteLabel: translate('approval', 'Cancel'),
 		}
 	},
 
@@ -197,26 +197,26 @@ export default {
 				&& newRule.tagRejected
 				&& newRule.approvers.length > 0
 			if (!noMissingField) {
-				return t('approval', 'All fields are required')
+				return translate('approval', 'All fields are required')
 			}
 
 			if (newRule.tagPending === newRule.tagApproved
 				|| newRule.tagPending === newRule.tagRejected
 				|| newRule.tagApproved === newRule.tagRejected) {
-				return t('approval', 'All tags must be different')
+				return translate('approval', 'All tags must be different')
 			}
 
 			const conflictingRule = Object.keys(this.rules).find((id) => {
 				return this.rules[id].tagPending === newRule.tagPending
 			})
 			if (conflictingRule) {
-				return t('approval', 'Pending tag is already used in another workflow')
+				return translate('approval', 'Pending tag is already used in another workflow')
 			}
 
 			return null
 		},
 		createTooltip() {
-			return t('approval', 'Create workflow')
+			return translate('approval', 'Create workflow')
 		},
 	},
 
@@ -228,7 +228,7 @@ export default {
 	},
 
 	methods: {
-		t: translate,
+		translate: translate,
 		loadRules() {
 			this.loadingRules = true
 			const url = generateUrl('/apps/approval/rules')
@@ -251,7 +251,7 @@ export default {
 				}
 			}).catch((error) => {
 				showError(
-					t('approval', 'Failed to get approval workflows')
+					translate('approval', 'Failed to get approval workflows')
 					+ ': ' + (error.response?.data?.error ?? error.response?.request?.responseText ?? ''),
 				)
 				console.error(error)
@@ -283,10 +283,10 @@ export default {
 				}
 				const url = generateUrl('/apps/approval/rule/' + id)
 				axios.put(url, req).then((response) => {
-					showSuccess(t('approval', 'Approval workflow saved'))
+					showSuccess(translate('approval', 'Approval workflow saved'))
 				}).catch((error) => {
 					showError(
-						t('approval', 'Failed to save approval workflow')
+						translate('approval', 'Failed to save approval workflow')
 						+ ': ' + (error.response?.data?.error ?? error.response?.request?.responseText ?? ''),
 					)
 					console.error(error)
@@ -335,13 +335,13 @@ export default {
 				}
 				const url = generateUrl('/apps/approval/rule')
 				axios.post(url, req).then((response) => {
-					showSuccess(t('approval', 'New approval workflow created'))
+					showSuccess(translate('approval', 'New approval workflow created'))
 					const id = response.data
 					this.newRule = null
 					this.$set(this.rules, id, rule)
 				}).catch((error) => {
 					showError(
-						t('approval', 'Failed to create approval workflow')
+						translate('approval', 'Failed to create approval workflow')
 						+ ': ' + (error.response?.data?.error ?? error.response?.request?.responseText ?? ''),
 					)
 					console.error(error)
@@ -353,11 +353,11 @@ export default {
 		onRuleDelete(id) {
 			const url = generateUrl('/apps/approval/rule/' + id)
 			axios.delete(url).then((response) => {
-				showSuccess(t('approval', 'Approval workflow deleted'))
+				showSuccess(translate('approval', 'Approval workflow deleted'))
 				this.$delete(this.rules, id)
 			}).catch((error) => {
 				showError(
-					t('approval', 'Failed to delete approval workflow')
+					translate('approval', 'Failed to delete approval workflow')
 					+ ': ' + (error.response?.data?.error ?? error.response?.request?.responseText ?? ''),
 				)
 				console.error(error)
@@ -372,7 +372,7 @@ export default {
 				}
 				const url = generateUrl('/apps/approval/tag')
 				axios.post(url, req).then((response) => {
-					showSuccess(t('approval', 'Tag "{name}" created', { name: this.newTagName }))
+					showSuccess(translate('approval', 'Tag "{name}" created', { name: this.newTagName }))
 					this.newTagName = ''
 					// trick to reload tag list
 					this.showRules = false
@@ -381,7 +381,7 @@ export default {
 					})
 				}).catch((error) => {
 					showError(
-						t('approval', 'Failed to create tag "{name}"', { name: this.newTagName })
+						translate('approval', 'Failed to create tag "{name}"', { name: this.newTagName })
 						+ ': ' + (error.response?.data?.error ?? error.response?.request?.responseText ?? ''),
 					)
 					console.error(error)
@@ -394,43 +394,55 @@ export default {
 			this.$refs.createTagInput.focus()
 		},
 		async confirmResetAllData() {
+			console.log('[ApprovalAdminSettings] confirmResetAllData called');
 			const builder = getDialogBuilder(
 				translate('approval', 'Reset All Approval Data'),
-				translate('approval', 'Are you sure you want to permanently delete all approval workflows, activity, and history? This action cannot be undone.'),
+				translate('approval', 'Are you sure you want to permanently delete all approval workflows, activity, and history? This action cannot be undone.')
 			)
-			builder.setCancelButton(translate('approval', 'Cancel'))
-			builder.setPrimaryButton(translate('approval', 'Reset All Data'), async () => {
-				try {
-					await axios.post(generateUrl('/apps/approval/settings/reset-all-data'))
-					showSuccess(translate('approval', 'All approval data has been successfully reset.'))
-					this.loadRules() // Reload to show empty state
-				} catch (e) {
-					console.error('Error resetting approval data:', e)
-					showError(translate('approval', 'Failed to reset approval data. Please check server logs.'))
-				}
-			}, {
-				destructive: true,
-				// closeOnSuccess: true, // This is often default behavior or handled by the builder itself
+			builder.addButton({
+				label: translate('approval', 'Cancel'),
+				callback: (dialog) => { dialog.hide() },
+			})
+			builder.addButton({
+				label: translate('approval', 'Reset All Data'),
+				callback: async (dialog) => {
+					try {
+						await axios.post(generateUrl('/apps/approval/settings/reset-all-data'))
+						showSuccess(translate('approval', 'All approval data has been successfully reset.'))
+						this.loadRules() // Reload to show empty state
+					} catch (e) {
+						console.error('Error resetting approval data:', e)
+						showError(translate('approval', 'Failed to reset approval data. Please check server logs.'))
+					}
+					dialog.hide()
+				},
+				style: builder.BUTTON_STYLE_DESTRUCTIVE,
 			})
 			builder.build().show()
 		},
 		async confirmResetActivity() {
+			console.log('[ApprovalAdminSettings] confirmResetActivity called');
 			const builder = getDialogBuilder(
 				translate('approval', 'Reset File Approval Statuses'),
-				translate('approval', 'Are you sure you want to clear all current approval statuses and history for all files? Workflow definitions will remain. System tags on files will not be removed automatically.'),
+				translate('approval', 'Are you sure you want to clear all current approval statuses and history for all files? Workflow definitions will remain. System tags on files will not be removed automatically.')
 			)
-			builder.setCancelButton(translate('approval', 'Cancel'))
-			builder.setPrimaryButton(translate('approval', 'Reset File Statuses'), async () => {
-				try {
-					await axios.post(generateUrl('/apps/approval/settings/reset-activity'))
-					showSuccess(translate('approval', 'All file approval statuses and history have been reset.'))
-				} catch (e) {
-					console.error('Error resetting approval activity:', e)
-					showError(translate('approval', 'Failed to reset approval activity. Please check server logs.'))
-				}
-			}, {
-				destructive: true,
-				// closeOnSuccess: true, // This is often default behavior or handled by the builder itself
+			builder.addButton({
+				label: translate('approval', 'Cancel'),
+				callback: (dialog) => { dialog.hide() },
+			})
+			builder.addButton({
+				label: translate('approval', 'Reset File Statuses'),
+				callback: async (dialog) => {
+					try {
+						await axios.post(generateUrl('/apps/approval/settings/reset-activity'))
+						showSuccess(translate('approval', 'All file approval statuses and history have been reset.'))
+					} catch (e) {
+						console.error('Error resetting approval activity:', e)
+						showError(translate('approval', 'Failed to reset approval activity. Please check server logs.'))
+					}
+					dialog.hide()
+				},
+				style: builder.BUTTON_STYLE_DESTRUCTIVE,
 			})
 			builder.build().show()
 		},
