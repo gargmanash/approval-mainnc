@@ -1,18 +1,12 @@
 <template>
 	<NcContent app-name="approval">
-		<template #app-navigation>
-			<NcAppNavigation :title="t('approval', 'Navigation Area')">
-				<div style="background-color: limegreen; color: white; padding: 20px; height: 100%;">
-					<p>This is the navigation slot.</p>
-					<p v-if="!allApprovalFiles.length">
-						Tree Data Status: No files loaded yet.
-					</p>
-					<p v-else>
-						Tree Data Status: Files are loaded ({{ allApprovalFiles.length }}).
-					</p>
-				</div>
-			</NcAppNavigation>
-		</template>
+		<NcAppNavigation :title="t('approval', 'Navigation Area')">
+			<div style="background-color: orangered; color: white; padding: 20px; height: 100%;">
+				<p>This is the (direct child) navigation slot content.</p>
+				<p v-if="!allApprovalFiles.length">Tree Data Status: No files loaded yet.</p>
+				<p v-else>Tree Data Status: Files are loaded ({{ allApprovalFiles.length }}).</p>
+			</div>
+		</NcAppNavigation>
 
 		<NcAppContent>
 			<ApprovalAnalytics
