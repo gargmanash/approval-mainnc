@@ -22,6 +22,12 @@ return [
 		 * Page Controllers
 		 */
 		['name' => 'Page#approvalCenter', 'url' => '/approval-center', 'verb' => 'GET'],
+
+		/**
+		 * Admin settings
+		 */
+		['name' => 'Config#resetAllData', 'url' => '/settings/reset-all-data', 'verb' => 'POST'],
+		['name' => 'Config#resetApprovalActivity', 'url' => '/settings/reset-activity', 'verb' => 'POST'],
 	],
 	'ocs' => [
 		/**

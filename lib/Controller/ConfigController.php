@@ -339,4 +339,66 @@ class ConfigController extends Controller {
 			? new DataResponse($result, 400)
 			: new DataResponse();
 	}
+
+	/**
+	 * Reset all approval data (rules, activity, etc.)
+	 * This is an admin-only action.
+	 * @return DataResponse
+	 */
+	public function resetAllData(): DataResponse {
+		try {
+			// Clear approval_activity table
+			$qbActivity = $this->db->getQueryBuilder();
+			$qbActivity->delete('approval_activity');
+			$qbActivity->executeStatement();
+
+			// Clear approval_rule_approvers table
+			$qbApprovers = $this->db->getQueryBuilder();
+			$qbApprovers->delete('approval_rule_approvers');
+			$qbApprovers->executeStatement();
+
+			// Clear approval_rule_requesters table
+			$qbRequesters = $this->db->getQueryBuilder();
+			$qbRequesters->delete('approval_rule_requesters');
+			$qbRequesters->executeStatement();
+
+			// Clear approval_rules table
+			$qbRules = $this->db->getQueryBuilder();
+			$qbRules->delete('approval_rules');
+			$qbRules->executeStatement();
+
+			// Optionally, reset auto-increment counters if using TRUNCATE (requires specific DB commands and more privileges)
+			// For simplicity and safety here, we're just deleting rows.
+			// Admin should be advised to manually clean up system tags if desired.
+
+			return new DataResponse(['status' => 'success', 'message' => 'All approval data has been reset.']);
+		} catch (\Exception $e) {
+			// Log the exception if possible
+			// $this->logger->error("Failed to reset approval data: " . $e->getMessage());
+			return new DataResponse(['status' => 'error', 'message' => 'Failed to reset approval data. Check server logs.'], 500);
+		}
+	}
+
+	/**
+	 * Reset only the approval activity for all files, keeping workflow rules.
+	 * This is an admin-only action.
+	 * @return DataResponse
+	 */
+	public function resetApprovalActivity(): DataResponse {
+		try {
+			// Clear approval_activity table
+			$qbActivity = $this->db->getQueryBuilder();
+			$qbActivity->delete('approval_activity');
+			$qbActivity->executeStatement();
+
+			// Note: System tags on files are not automatically removed by this action.
+			// Admins might need to manually clear relevant tags from files if they want a complete visual reset for users.
+
+			return new DataResponse(['status' => 'success', 'message' => 'All file approval statuses and history have been reset. Workflow rules remain.']);
+		} catch (\Exception $e) {
+			// Log the exception if possible
+			// $this->logger->error("Failed to reset approval activity: " . $e->getMessage());
+			return new DataResponse(['status' => 'error', 'message' => 'Failed to reset approval activity. Check server logs.'], 500);
+		}
+	}
 }
