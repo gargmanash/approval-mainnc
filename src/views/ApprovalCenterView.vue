@@ -1,38 +1,30 @@
 <template>
-	<div id="approval-center-view">
-		<NcAppContent app-name="approval">
-			<template #app-navigation>
-				<NcAppNavigation :title="t('approval', 'Navigation Area')">
-					<div style="background-color: blue; color: white; padding: 20px; height: 100%;">
-						<p>This is the navigation slot.</p>
-						<p v-if="!allApprovalFiles.length">Tree Data Status: No files loaded yet.</p>
-						<p v-else>Tree Data Status: Files are loaded ({{ allApprovalFiles.length }}).</p>
-						<!-- Original Tree Logic - temporarily simplified above -->
-						<!-- <ApprovalFileTree
-							v-if="fileTreeWithKpis && fileTreeWithKpis.length > 0"
-							:tree-data="fileTreeWithKpis"
-							:workflows="workflows"
-							@approve-file="handleApproveFile"
-							@reject-file="handleRejectFile"
-							@view-file="handleViewFile"
-							@toggle-expand="handleToggleExpand" />
-						<p v-else class="empty-tree-message">
-							{{ fileTreeWithKpis === null ? t('approval', 'Loading tree...') : t('approval', 'No files for approval.') }}
-						</p> -->
-					</div>
-				</NcAppNavigation>
-			</template>
+	<NcContent app-name="approval">
+		<template #app-navigation>
+			<NcAppNavigation :title="t('approval', 'Navigation Area')">
+				<div style="background-color: limegreen; color: white; padding: 20px; height: 100%;">
+					<p>This is the navigation slot.</p>
+					<p v-if="!allApprovalFiles.length">
+						Tree Data Status: No files loaded yet.
+					</p>
+					<p v-else>
+						Tree Data Status: Files are loaded ({{ allApprovalFiles.length }}).
+					</p>
+				</div>
+			</NcAppNavigation>
+		</template>
 
+		<NcAppContent>
 			<ApprovalAnalytics
 				:workflow-kpis="workflowKpis"
 				:all-approval-files-data="allApprovalFiles"
 				:workflow-rules="workflows" />
 		</NcAppContent>
-	</div>
+	</NcContent>
 </template>
 
 <script>
-import { NcAppContent, NcAppNavigation } from '@nextcloud/vue'
+import { NcContent, NcAppContent, NcAppNavigation } from '@nextcloud/vue'
 import { generateUrl } from '@nextcloud/router'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import axios from '@nextcloud/axios'
@@ -41,13 +33,14 @@ import ApprovalAnalytics from './ApprovalAnalytics.vue'
 import { approve, reject } from '../files/helpers.js'
 import { translate } from '@nextcloud/l10n'
 
-const STATUS_PENDING = 1
-const STATUS_APPROVED = 2
-const STATUS_REJECTED = 3
+// const STATUS_PENDING = 1 // Commented out as no longer used directly in this component
+// const STATUS_APPROVED = 2 // Commented out as no longer used directly in this component
+// const STATUS_REJECTED = 3 // Commented out as no longer used directly in this component
 
 export default {
 	name: 'ApprovalCenterView',
 	components: {
+		NcContent,
 		NcAppContent,
 		NcAppNavigation,
 		// ApprovalFileTree, // Temporarily commented out for debugging
@@ -56,118 +49,25 @@ export default {
 	data() {
 		return {
 			loading: true,
-			allApprovalFiles: [], // Fetched from /all-approval-files
+			allApprovalFiles: [],
 			workflows: [],
 			workflowKpis: [],
-			expandedFolderStates: {}, // Added for managing folder expanded states
+			expandedFolderStates: {},
+			// fileTreeWithKpis should still be computed if ApprovalFileTree is to be restored
 		}
 	},
 	computed: {
-		fileTreeWithKpis() {
-			// eslint-disable-next-line no-console
-			console.log('[ApprovalCenterView] computed fileTreeWithKpis: input allApprovalFiles:', JSON.parse(JSON.stringify(this.allApprovalFiles)))
-			const tree = []
-			const map = {} // Map for FOLDERS ONLY: path -> folderNode
-
-			// Build tree: folders and files. Folders are unique by path. Files are created for each entry in allApprovalFiles.
-			this.allApprovalFiles.forEach(file => {
-				const pathParts = file.path.split('/').filter(p => p !== '')
-				let currentLevelForFolderCreation = tree
-				const currentPathArray = []
-				let parentFolderNode = null
-
-				for (let i = 0; i < pathParts.length - 1; i++) {
-					const part = pathParts[i]
-					currentPathArray.push(part)
-					const cumulativeFolderPath = '/' + currentPathArray.join('/')
-
-					let existingFolderNode = map[cumulativeFolderPath]
-					if (!existingFolderNode) {
-						existingFolderNode = {
-							name: part,
-							type: 'folder',
-							path: cumulativeFolderPath,
-							children: [],
-							kpis: { pending: 0, approved: 0, rejected: 0 },
-							expanded: !!this.expandedFolderStates[cumulativeFolderPath],
-						}
-						map[cumulativeFolderPath] = existingFolderNode
-						currentLevelForFolderCreation.push(existingFolderNode)
-					}
-					parentFolderNode = existingFolderNode
-					currentLevelForFolderCreation = existingFolderNode.children
-				}
-
-				const fileName = pathParts[pathParts.length - 1]
-				const fileNode = {
-					name: fileName,
-					type: 'file',
-					path: file.path, // Use the original path from the file object
-					originalFile: file, // Keep a reference to the original file object from the backend
-					kpis: { pending: 0, approved: 0, rejected: 0 },
-				}
-
-				if (file.status_code === STATUS_PENDING) fileNode.kpis.pending = 1
-				else if (file.status_code === STATUS_APPROVED) fileNode.kpis.approved = 1
-				else if (file.status_code === STATUS_REJECTED) fileNode.kpis.rejected = 1
-
-				// Add the fileNode to the determined parent folder's children array, or to the root if it's a root file
-				if (parentFolderNode) {
-					parentFolderNode.children.push(fileNode)
-				} else {
-					// File is at the root (e.g., path was just "filename.txt")
-					tree.push(fileNode)
-				}
-				// Note: We do not use the map for file nodes, nor do we check for duplicates by name within the same parent,
-				// allowing multiple entries for the same file if they represent different workflow instances.
-			})
-
-			// Recursive function to calculate KPIs upwards
-			const calculateFolderKpis = (folderNode) => {
-				folderNode.kpis = { pending: 0, approved: 0, rejected: 0 } // Reset before summing
-				folderNode.children.forEach(child => {
-					if (child.type === 'folder') {
-						calculateFolderKpis(child) // Recurse for subfolders
-					}
-					folderNode.kpis.pending += child.kpis.pending
-					folderNode.kpis.approved += child.kpis.approved
-					folderNode.kpis.rejected += child.kpis.rejected
-				})
+		fileTreeWithKpis() { // Keep this computed property for when we restore ApprovalFileTree
+			// Original logic for fileTreeWithKpis...
+			// For now, can return an empty array or handle as before since it's not directly used by placeholder
+			// To avoid errors if any part of the template still somehow tries to access it indirectly:
+			if (!this.allApprovalFiles || this.allApprovalFiles.length === 0) {
+				return [] // Or null, consistent with how its usage is checked
 			}
-
-			// Calculate KPIs for all top-level folders
-			tree.filter(node => node.type === 'folder').forEach(calculateFolderKpis)
-
-			// If the tree has a single root node (typically the username like 'manas' or 'admin'),
-			// and that node itself is a folder and contains a direct child folder named 'files',
-			// then we display the contents of that 'files' folder as the root of the tree.
-			// This effectively hides the top-level username folder and the 'files' folder itself.
-			if (tree.length === 1) {
-				const topLevelNode = tree[0]
-				// Ensure topLevelNode is a folder and has children to search
-				if (topLevelNode.type === 'folder' && topLevelNode.children && topLevelNode.children.length > 0) {
-					const filesNode = topLevelNode.children.find(child => child.type === 'folder' && child.name === 'files')
-
-					if (filesNode && filesNode.children) {
-						// eslint-disable-next-line no-console
-						console.log(`[ApprovalCenterView] Root node is '${topLevelNode.name}'. Found 'files' child. Returning contents of '${topLevelNode.name}/files' as the new root.`)
-						return filesNode.children
-					} else {
-						// eslint-disable-next-line no-console
-						console.log(`[ApprovalCenterView] Root node is '${topLevelNode.name}', but a 'files' subdirectory was not found or is empty. Displaying tree from '${topLevelNode.name}'.`)
-					}
-				} else if (topLevelNode.type === 'folder' && (!topLevelNode.children || topLevelNode.children.length === 0)) {
-					// eslint-disable-next-line no-console
-					console.log(`[ApprovalCenterView] Root node '${topLevelNode.name}' is an empty folder. Displaying it as root.`)
-				} else if (topLevelNode.type === 'file') {
-					// eslint-disable-next-line no-console
-					console.log(`[ApprovalCenterView] Root node '${topLevelNode.name}' is a file. Displaying it as root.`)
-				}
-			}
-
-			// eslint-disable-next-line no-console
-			console.log('[ApprovalCenterView] computed fileTreeWithKpis: output tree (original or un-modified root):', JSON.parse(JSON.stringify(tree)))
-			return tree
+			// Placeholder for the actual tree building logic, to avoid breaking if something refers to it.
+			// The actual logic is complex and was here before.
+			// For this test, the placeholder in the template doesn't use it.
+			return this.allApprovalFiles.map(f => ({ name: f.path, type: 'file' })) // Ensure no semicolon here
 		},
 	},
 	async mounted() {
@@ -179,7 +79,7 @@ export default {
 		// eslint-disable-next-line no-console
 		console.log('[ApprovalCenterView] mounted: allApprovalFiles.length:', this.allApprovalFiles.length)
 		// eslint-disable-next-line no-console
-		console.log('[ApprovalCenterView] mounted: fileTreeWithKpis.length (computed):', this.fileTreeWithKpis.length)
+		// console.log('[ApprovalCenterView] mounted: fileTreeWithKpis.length (computed):', this.fileTreeWithKpis.length)
 		// eslint-disable-next-line no-console
 		console.log('[ApprovalCenterView] mounted: workflowKpis.length:', this.workflowKpis.length)
 	},
@@ -207,9 +107,8 @@ export default {
 				console.log('[ApprovalCenterView] reloadData: finished. loading:', this.loading)
 				// eslint-disable-next-line no-console
 				console.log('[ApprovalCenterView] reloadData: allApprovalFiles.length:', this.allApprovalFiles.length)
-				// Note: Accessing computed property here will trigger its calculation if not already cached
 				// eslint-disable-next-line no-console
-				console.log('[ApprovalCenterView] reloadData: fileTreeWithKpis.length (computed):', this.fileTreeWithKpis.length)
+				// console.log('[ApprovalCenterView] reloadData: fileTreeWithKpis.length (computed):', this.fileTreeWithKpis.length)
 				// eslint-disable-next-line no-console
 				console.log('[ApprovalCenterView] reloadData: workflowKpis.length:', this.workflowKpis.length)
 			}
@@ -264,7 +163,7 @@ export default {
 		},
 		async handleApproveFile(file) {
 			try {
-				await approve(file.file_id, file.file_name, null, true) // originalFile is passed
+				await approve(file.file_id, file.file_name, null, true)
 				showSuccess(translate('approval', 'File "{fileName}" approved.', { fileName: file.file_name }))
 				await this.reloadData()
 			} catch (err) {
@@ -274,7 +173,7 @@ export default {
 		},
 		async handleRejectFile(file) {
 			try {
-				await reject(file.file_id, file.file_name, null, true) // originalFile is passed
+				await reject(file.file_id, file.file_name, null, true)
 				showSuccess(translate('approval', 'File "{fileName}" rejected.', { fileName: file.file_name }))
 				await this.reloadData()
 			} catch (err) {
@@ -291,33 +190,14 @@ export default {
 </script>
 
 <style scoped lang="scss">
-#approval-center-view {
-	height: 100%;
-	width: 100%;
-	/* display: flex; // REMOVED THIS to let NcAppContent manage its layout */
-}
-
-/* Custom styles for the header within NcAppNavigation if needed - REMOVED as custom header is removed
-.custom-app-navigation-header {
-	padding: 12px 16px;
-	border-bottom: 1px solid var(--color-border);
-	h2 {
-		font-size: 16px;
-		margin: 0;
-		line-height: 24px;
-	}
-}
-*/
-
-.empty-tree-message {
-	padding: 16px; /* Added padding directly here */
+/* Styles for NcAppNavigation content if needed */
+.empty-tree-message { /* This was for the actual tree, can be restored later */
+	padding: 16px;
 	font-style: italic;
 	color: var(--color-text-maxcontrast-secondary);
 }
 
-/* Old layout styles are already commented out or removed */
-
-h1, h2 { /* These might be too general now, ensure they don't conflict */
+h1, h2 {
 	color: var(--color-main-text);
 }
 
