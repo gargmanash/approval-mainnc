@@ -156,7 +156,10 @@ class ConfigController extends Controller {
 		";
 
 		$stmt = $this->db->executeQuery($sql);
-		$results = $stmt->fetchAllRows();
+		$results = [];
+		while ($row = $stmt->fetchRow()) {
+			$results[] = $row;
+		}
 
 		$kpis = array_map(function($row) {
 			return [
@@ -241,7 +244,10 @@ class ConfigController extends Controller {
 		];
 
 		$stmt = $this->db->executeQuery($sql, $params);
-		$results = $stmt->fetchAllRows();
+		$results = [];
+		while ($row = $stmt->fetchRow()) {
+			$results[] = $row;
+		}
 
 		$allFilesData = array_map(function($row) {
 			return [
