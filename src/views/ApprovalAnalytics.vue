@@ -259,13 +259,13 @@ export default {
 }
 
 /* Target the H1 specifically if it's the first child causing an issue */
+/* Removing this block to allow default/parent padding to take effect
 #approval-analytics-page > h1 {
-	margin-top: 0; /* Adjust as needed, could be small value like 4px or 8px */
-	padding-inline-start: 0; /* Assuming NcAppContent handles main left padding */
+	margin-top: 0;
+	padding-inline-start: 0;
 	margin-inline-start: 0;
-	/* font-size: 1.5em; /* Example: Optionally adjust size if it feels too large */
-	/* margin-bottom: 16px; /* Ensure consistent spacing below H1 */
 }
+*/
 
 .workflow-kpi-summary {
 	flex-shrink: 0;
