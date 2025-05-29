@@ -252,11 +252,10 @@ export default {
 
 <style scoped lang="scss">
 #approval-analytics-page {
-	// padding: 20px; // REMOVED - Let NcAppContent or its direct child manage this padding.
+	padding: 20px; /* Add general padding for the whole analytics page content */
 	display: flex;
 	flex-direction: column;
 	height: 100%; // Fill the area provided by NcAppContent
-	// overflow: hidden; // This might still be useful, but let's test without it first
 }
 
 /* Target the H1 specifically if it's the first child causing an issue */
