@@ -1,6 +1,6 @@
 <template>
 	<div id="approval-analytics-page">
-		<h1>{{ t('approval', 'Approval Analytics') }}</h1>
+		<!-- <h1>{{ t('approval', 'Approval Analytics') }}</h1> -->
 
 		<!-- Workflow KPIs Summary Table -->
 		<div v-if="workflowKpis && workflowKpis.length" class="workflow-kpi-summary">
