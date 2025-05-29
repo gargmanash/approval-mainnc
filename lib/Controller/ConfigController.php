@@ -156,7 +156,7 @@ class ConfigController extends Controller {
 		";
 
 		$stmt = $this->db->executeQuery($sql);
-		$results = $stmt->fetchAllAssociative();
+		$results = $stmt->fetchAllRows();
 
 		$kpis = array_map(function($row) {
 			return [
@@ -241,7 +241,7 @@ class ConfigController extends Controller {
 		];
 
 		$stmt = $this->db->executeQuery($sql, $params);
-		$results = $stmt->fetchAllAssociative();
+		$results = $stmt->fetchAllRows();
 
 		$allFilesData = array_map(function($row) {
 			return [
