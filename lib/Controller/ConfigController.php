@@ -117,70 +117,60 @@ class ConfigController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function getWorkflowKpis(): DataResponse {
-		$qb = $this->db->getQueryBuilder();
+		$prefix = $this->db->getTablePrefix();
+		$sql = "
+			SELECT
+				ar.id AS rule_id,
+				ar.description,
+				COALESCE(SUM(CASE WHEN la.new_state = 1 THEN 1 ELSE 0 END), 0) AS pending_count,
+				COALESCE(SUM(CASE WHEN la.new_state = 2 THEN 1 ELSE 0 END), 0) AS approved_count,
+				COALESCE(SUM(CASE WHEN la.new_state = 3 THEN 1 ELSE 0 END), 0) AS rejected_count
+			FROM
+				{$prefix}approval_rules ar
+			LEFT JOIN (
+				SELECT
+					aa_inner.file_id,
+					aa_inner.rule_id,
+					aa_inner.new_state
+				FROM
+					{$prefix}approval_activity aa_inner
+				INNER JOIN (
+					SELECT
+						file_id,
+						rule_id,
+						MAX(timestamp) AS max_timestamp
+					FROM
+						{$prefix}approval_activity
+					GROUP BY
+						file_id, rule_id
+				) latest_aa_time ON aa_inner.file_id = latest_aa_time.file_id
+									AND aa_inner.rule_id = latest_aa_time.rule_id
+									AND aa_inner.timestamp = latest_aa_time.max_timestamp
+				INNER JOIN
+					{$prefix}filecache fc ON aa_inner.file_id = fc.fileid
+			) la ON ar.id = la.rule_id
+			GROUP BY
+				ar.id, ar.description
+			ORDER BY
+				ar.id;
+		";
 
-		// Subquery to get the latest timestamp for each file_id, rule_id combination
-		$latestAaTimeQb = $this->db->getQueryBuilder();
-		$latestAaTimeQb->select(['file_id', 'rule_id', 'MAX(timestamp) AS max_timestamp'])
-			->from('approval_activity')
-			->groupBy(['file_id', 'rule_id']);
+		$stmt = $this->db->getConnection()->executeQuery($sql);
+		$results = $stmt->fetchAllAssociative(); // Changed from fetchAll to fetchAllAssociative
 
-		// Subquery to get the latest state for each file_id and rule_id, ensuring the file exists
-		$latestActivityQb = $this->db->getQueryBuilder();
-		$latestActivityQb->select(['aa.file_id', 'aa.rule_id', 'aa.new_state'])
-			->from('approval_activity', 'aa')
-			->innerJoin(
-				'aa',
-				'(' . $latestAaTimeQb->getSQL() . ')', // Use the SQL from the previous subquery
-				'latest_aa_time',
-				$latestActivityQb->expr()->andX(
-					$latestActivityQb->expr()->eq('aa.file_id', 'latest_aa_time.file_id'),
-					$latestActivityQb->expr()->eq('aa.rule_id', 'latest_aa_time.rule_id'),
-					$latestActivityQb->expr()->eq('aa.timestamp', 'latest_aa_time.max_timestamp')
-				)
-			)
-			->innerJoin('aa', 'filecache', 'fc', $latestActivityQb->expr()->eq('aa.file_id', 'fc.fileid'));
-
-		// Main query
-		$qb->select([
-			'ar.id AS rule_id',
-			'ar.description',
-			$qb->expr()->sumCase('latest_activity.new_state = 1', 1, 'pending_count'),
-			$qb->expr()->sumCase('latest_activity.new_state = 2', 1, 'approved_count'),
-			$qb->expr()->sumCase('latest_activity.new_state = 3', 1, 'rejected_count')
-		])
-			->from('approval_rules', 'ar')
-			->leftJoin(
-				'ar',
-				'(' . $latestActivityQb->getSQL() . ')', // Use the SQL from the latest_activity subquery
-				'latest_activity',
-				$qb->expr()->eq('ar.id', 'latest_activity.rule_id')
-			)
-			->groupBy(['ar.id', 'ar.description'])
-			->orderBy('ar.id', 'ASC');
-
-		// Set parameters for the subqueries if QueryBuilder handles them globally or pass them down
-		// For now, assuming getSQL() bakes in literals if not using named parameters for sub-sub-queries.
-		// If parameters are needed for sub-sub-queries, this approach of getSQL() might need refinement
-		// or QueryBuilder must support nested parameter propagation.
-
-		$stmt = $qb->execute();
-		$results = $stmt->fetchAll();
-		$stmt->closeCursor();
-
-		$kpis = [];
-		foreach ($results as $row) {
-			// Ensure counts are integers
-			$kpis[] = [
+		$kpis = array_map(function($row) {
+			return [
 				'rule_id' => (int)$row['rule_id'],
 				'description' => $row['description'],
-				'pending_count' => (int)($row['pending_count'] ?? 0),
-				'approved_count' => (int)($row['approved_count'] ?? 0),
-				'rejected_count' => (int)($row['rejected_count'] ?? 0),
+				'pending_count' => (int)$row['pending_count'],
+				'approved_count' => (int)$row['approved_count'],
+				'rejected_count' => (int)$row['rejected_count'],
 			];
-		}
+		}, $results);
 
-		// Ensure all rules are present, even if they have no activity
+		// Ensure all rules are present, even if they have no activity (already handled by LEFT JOIN and COALESCE)
+		// However, if a rule was created and *never* had any file associated (even non-existent ones),
+		// it might still be missing. The existing logic below can catch truly orphaned rules.
 		$allRules = $this->ruleService->getRules();
 		$kpisRuleIds = array_column($kpis, 'rule_id');
 
@@ -189,13 +179,12 @@ class ConfigController extends Controller {
 				$kpis[] = [
 					'rule_id' => (int)$rule['id'],
 					'description' => $rule['description'],
-					'pending_count' => 0,
-					'approved_count' => 0,
-					'rejected_count' => 0,
+				'pending_count' => 0,
+				'approved_count' => 0,
+				'rejected_count' => 0,
 				];
 			}
 		}
-		// Sort again by rule_id if new rules were added
 		usort($kpis, function($a, $b) {
 			return $a['rule_id'] <=> $b['rule_id'];
 		});
@@ -206,116 +195,56 @@ class ConfigController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function getAllApprovalFiles(): DataResponse {
-		$qb = $this->db->getQueryBuilder();
+		$prefix = $this->db->getTablePrefix();
+		$sql = "
+			SELECT
+				dp.file_id,
+				dp.rule_id,
+				fc.path,
+				ls.status_code_val AS status_code,
+				ls.activity_timestamp_val AS activity_timestamp,
+				sa.sent_at_val AS sent_at,
+				app_at.approved_at_val AS approved_at,
+				rej_at.rejected_at_val AS rejected_at
+			FROM
+				(SELECT DISTINCT file_id, rule_id FROM {$prefix}approval_activity) dp
+			INNER JOIN
+				{$prefix}filecache fc ON dp.file_id = fc.fileid
+			LEFT JOIN (
+				SELECT
+					act.file_id, act.rule_id, act.new_state AS status_code_val, act.timestamp AS activity_timestamp_val
+				FROM {$prefix}approval_activity act
+				INNER JOIN (
+					SELECT file_id, rule_id, MAX(timestamp) AS max_ts
+					FROM {$prefix}approval_activity GROUP BY file_id, rule_id
+				) latest_ts_info ON act.file_id = latest_ts_info.file_id AND act.rule_id = latest_ts_info.rule_id AND act.timestamp = latest_ts_info.max_ts
+			) ls ON dp.file_id = ls.file_id AND dp.rule_id = ls.rule_id
+			LEFT JOIN (
+				SELECT file_id, rule_id, MIN(timestamp) AS sent_at_val
+				FROM {$prefix}approval_activity GROUP BY file_id, rule_id
+			) sa ON dp.file_id = sa.file_id AND dp.rule_id = sa.rule_id
+			LEFT JOIN (
+				SELECT file_id, rule_id, MAX(timestamp) AS approved_at_val
+				FROM {$prefix}approval_activity WHERE new_state = :stateApproved GROUP BY file_id, rule_id
+			) app_at ON dp.file_id = app_at.file_id AND dp.rule_id = app_at.rule_id
+			LEFT JOIN (
+				SELECT file_id, rule_id, MAX(timestamp) AS rejected_at_val
+				FROM {$prefix}approval_activity WHERE new_state = :stateRejected GROUP BY file_id, rule_id
+			) rej_at ON dp.file_id = rej_at.file_id AND dp.rule_id = rej_at.rule_id
+			ORDER BY
+				dp.file_id ASC, dp.rule_id ASC;
+		";
 
-		// Subquery for distinct file_id, rule_id pairs
-		$distinctPairsQb = $this->db->getQueryBuilder();
-		$distinctPairsQb->selectDistinct(['file_id', 'rule_id'])
-			->from('approval_activity', 'apa'); // Alias for clarity in main query if needed
+		$params = [
+			'stateApproved' => 2,
+			'stateRejected' => 3
+		];
 
-		// Subquery for latest status and its timestamp
-		$latestStatusSubQb = $this->db->getQueryBuilder();
-		$latestStatusInnerQb = $this->db->getQueryBuilder();
-		$latestStatusInnerQb->select(['file_id', 'rule_id', 'MAX(timestamp) AS max_ts'])
-			->from('approval_activity')
-			->groupBy(['file_id', 'rule_id']);
-
-		$latestStatusSubQb->select(['act.file_id', 'act.rule_id', 'act.new_state AS status_code_val', 'act.timestamp AS activity_timestamp_val'])
-			->from('approval_activity', 'act')
-			->innerJoin(
-				'act',
-				'(' . $latestStatusInnerQb->getSQL() . ')',
-				'latest_ts_info',
-				$latestStatusSubQb->expr()->andX(
-					$latestStatusSubQb->expr()->eq('act.file_id', 'latest_ts_info.file_id'),
-					$latestStatusSubQb->expr()->eq('act.rule_id', 'latest_ts_info.rule_id'),
-					$latestStatusSubQb->expr()->eq('act.timestamp', 'latest_ts_info.max_ts')
-				)
-			);
-
-		// Subquery for sent_at (earliest timestamp)
-		$sentAtSubQb = $this->db->getQueryBuilder();
-		$sentAtSubQb->select(['file_id', 'rule_id', 'MIN(timestamp) AS sent_at_val'])
-			->from('approval_activity')
-			->groupBy(['file_id', 'rule_id']);
-
-		// Subquery for approved_at (latest approval timestamp)
-		$approvedAtSubQb = $this->db->getQueryBuilder();
-		$approvedAtSubQb->select(['file_id', 'rule_id', 'MAX(timestamp) AS approved_at_val'])
-			->from('approval_activity')
-			->where($approvedAtSubQb->expr()->eq('new_state', $approvedAtSubQb->createNamedParameter(2, IQueryBuilder::PARAM_INT)))
-			->groupBy(['file_id', 'rule_id']);
-
-		// Subquery for rejected_at (latest rejection timestamp)
-		$rejectedAtSubQb = $this->db->getQueryBuilder();
-		$rejectedAtSubQb->select(['file_id', 'rule_id', 'MAX(timestamp) AS rejected_at_val'])
-			->from('approval_activity')
-			->where($rejectedAtSubQb->expr()->eq('new_state', $rejectedAtSubQb->createNamedParameter(3, IQueryBuilder::PARAM_INT)))
-			->groupBy(['file_id', 'rule_id']);
-
-		// Main query joining all subqueries
-		$qb->select([
-			'aa_main.file_id',
-			'aa_main.rule_id',
-			'fc.path',
-			'ls.status_code_val AS status_code',
-			'ls.activity_timestamp_val AS activity_timestamp',
-			'sa.sent_at_val AS sent_at',
-			'app_at.approved_at_val AS approved_at',
-			'rej_at.rejected_at_val AS rejected_at'
-		])
-		->from('(' . $distinctPairsQb->getSQL() . ')', 'aa_main')
-		->innerJoin('aa_main', 'filecache', 'fc', $qb->expr()->eq('aa_main.file_id', 'fc.fileid'))
-		->leftJoin(
-			'aa_main',
-			'(' . $latestStatusSubQb->getSQL() . ')',
-			'ls',
-			$qb->expr()->andX(
-				$qb->expr()->eq('aa_main.file_id', 'ls.file_id'),
-				$qb->expr()->eq('aa_main.rule_id', 'ls.rule_id')
-			)
-		)
-		->leftJoin(
-			'aa_main',
-			'(' . $sentAtSubQb->getSQL() . ')',
-			'sa',
-			$qb->expr()->andX(
-				$qb->expr()->eq('aa_main.file_id', 'sa.file_id'),
-				$qb->expr()->eq('aa_main.rule_id', 'sa.rule_id')
-			)
-		)
-		->leftJoin(
-			'aa_main',
-			'(' . $approvedAtSubQb->getSQL() . ')',
-			'app_at',
-			$qb->expr()->andX(
-				$qb->expr()->eq('aa_main.file_id', 'app_at.file_id'),
-				$qb->expr()->eq('aa_main.rule_id', 'app_at.rule_id')
-			)
-		)
-		->leftJoin(
-			'aa_main',
-			'(' . $rejectedAtSubQb->getSQL() . ')',
-			'rej_at',
-			$qb->expr()->andX(
-				$qb->expr()->eq('aa_main.file_id', 'rej_at.file_id'),
-				$qb->expr()->eq('aa_main.rule_id', 'rej_at.rule_id')
-			)
-		)
-		->orderBy('aa_main.file_id', 'ASC')
-		->addOrderBy('aa_main.rule_id', 'ASC');
-
-		// Handle parameters from subqueries
-		// Need to collect parameters from $approvedAtSubQb and $rejectedAtSubQb
-		$parameters = array_merge(
-			$approvedAtSubQb->getParameters(),
-			$rejectedAtSubQb->getParameters()
-		);
-		$qb->setParameters($parameters);
-
-		$stmt = $qb->execute();
+		// For parameter types, Doctrine infers simple integers correctly.
+		// If explicit types were needed: $types = ['stateApproved' => \PDO::PARAM_INT, 'stateRejected' => \PDO::PARAM_INT];
+		// $stmt = $this->db->getConnection()->executeQuery($sql, $params, $types);
+		$stmt = $this->db->getConnection()->executeQuery($sql, $params);
 		$results = $stmt->fetchAllAssociative();
-		$stmt->closeCursor();
 
 		$allFilesData = array_map(function($row) {
 			return [
