@@ -21,7 +21,10 @@
 					</p>
 				</div>
 				<div class="right-pane">
-					<ApprovalAnalytics :workflow-kpis="workflowKpis" />
+					<ApprovalAnalytics
+						:workflow-kpis="workflowKpis"
+						:all-approval-files-data="allApprovalFiles"
+						:workflow-rules="workflows" />
 				</div>
 			</div>
 		</NcAppContent>

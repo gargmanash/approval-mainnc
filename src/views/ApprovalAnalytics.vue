@@ -86,10 +86,9 @@
 
 <script>
 import { translate as t } from '@nextcloud/l10n'
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
+// axios and generateUrl no longer needed at the top level here
 
-const ITEMS_PER_PAGE = 10 // Define how many items per page
+const ITEMS_PER_PAGE = 10
 
 export default {
 	name: 'ApprovalAnalytics',
@@ -98,20 +97,38 @@ export default {
 			type: Array,
 			default: () => [],
 		},
+		allApprovalFilesData: {
+			type: Array,
+			default: () => [],
+		},
+		workflowRules: { // New prop for rules
+			type: Array,
+			default: () => [],
+		},
 	},
 	data() {
 		return {
 			t,
-			allApprovalFiles: [],
-			rules: {},
-			loading: false,
+			// rules: {}, // Removed, will use computed rulesMap from workflowRules prop
+			loading: false, // Kept for any independent loading state if needed, or can be removed if parent handles all loading indications
 			paginationState: {},
 		}
 	},
 	computed: {
+		rulesMap() {
+			// eslint-disable-next-line no-console
+			// console.log('[ApprovalAnalytics] Recomputing rulesMap, workflowRules length:', this.workflowRules.length);
+			return this.workflowRules.reduce((acc, rule) => {
+				if (rule && rule.id) {
+					acc[rule.id] = rule
+				}
+				return acc
+			}, {})
+		},
 		filesGroupedByWorkflow() {
 			const grouped = {}
-			this.allApprovalFiles.forEach(file => {
+			this.allApprovalFilesData.forEach(file => {
+				// Use this.rulesMap here
 				const ruleDescription = this.getRuleDescription(file.rule_id)
 				if (!grouped[ruleDescription]) {
 					grouped[ruleDescription] = {
@@ -133,20 +150,48 @@ export default {
 			return grouped
 		},
 	},
+	watch: {
+		allApprovalFilesData: {
+			handler(newData) {
+				// console.log('[ApprovalAnalytics] allApprovalFilesData prop changed, new length:', newData ? newData.length : 0);
+				if (newData && Object.keys(this.rulesMap).length > 0) { // Ensure rulesMap is also ready
+					this.initializePaginationState()
+				} else if (newData && Object.keys(this.rulesMap).length === 0) {
+					// console.log('[ApprovalAnalytics] allApprovalFilesData changed, but rulesMap is not ready yet for pagination init.');
+				}
+			},
+			// immediate: true, // defer to rulesMap watcher or combined condition
+		},
+		workflowRules: {
+			handler(newRules) {
+				// console.log('[ApprovalAnalytics] workflowRules prop changed, new length:', newRules ? newRules.length : 0);
+				if (newRules && this.allApprovalFilesData && this.allApprovalFilesData.length > 0) {
+					this.initializePaginationState()
+				} else if (newRules) {
+					// console.log('[ApprovalAnalytics] workflowRules changed, but allApprovalFilesData is not ready yet for pagination init.');
+				}
+			},
+			// immediate: true // defer to combined condition
+		},
+	},
 	async mounted() {
-		this.loading = true
-		try {
-			await this.fetchRules()
-			await this.fetchAllApprovalFiles()
-		} finally {
-			this.loading = false
+		// console.log('[ApprovalAnalytics] Mounted. Waiting for props to trigger pagination init via watchers.');
+		// Initial check in case props are already populated when mounted
+		if (this.allApprovalFilesData && this.allApprovalFilesData.length > 0 && Object.keys(this.rulesMap).length > 0) {
+			// console.log('[ApprovalAnalytics] Props available on mount, initializing pagination.');
+			this.initializePaginationState()
 		}
 	},
 	methods: {
 		initializePaginationState() {
+			// console.log('[ApprovalAnalytics] initializePaginationState called. Files length:', this.allApprovalFilesData?.length, 'RulesMap keys:', Object.keys(this.rulesMap).length);
+			if (!this.allApprovalFilesData || Object.keys(this.rulesMap).length === 0) {
+				// console.warn('[ApprovalAnalytics] initializePaginationState: Missing data for initialization.');
+				return
+			}
 			const newPaginationState = { ...this.paginationState }
 			const uniqueWorkflowDescriptions = new Set(
-				this.allApprovalFiles.map(file => this.getRuleDescription(file.rule_id)),
+				this.allApprovalFilesData.map(file => this.getRuleDescription(file.rule_id)),
 			)
 
 			uniqueWorkflowDescriptions.forEach(ruleDescription => {
@@ -158,6 +203,7 @@ export default {
 				}
 			})
 			this.paginationState = newPaginationState
+			// console.log('[ApprovalAnalytics] paginationState updated:', JSON.parse(JSON.stringify(this.paginationState)));
 		},
 		prevPage(workflowName) {
 			if (this.paginationState[workflowName] && this.paginationState[workflowName].currentPage > 1) {
@@ -170,30 +216,7 @@ export default {
 				this.paginationState[workflowName].currentPage++
 			}
 		},
-		async fetchAllApprovalFiles() {
-			try {
-				const response = await axios.get(generateUrl('/apps/approval/all-approval-files'))
-				this.allApprovalFiles = response.data || []
-				this.initializePaginationState()
-			} catch (e) {
-				console.error('Error fetching approval files:', e)
-			}
-		},
-		async fetchRules() {
-			try {
-				const response = await axios.get(generateUrl('/apps/approval/rules'))
-				const rulesArray = response.data ? (Array.isArray(response.data) ? response.data : Object.values(response.data)) : []
-				this.rules = rulesArray.reduce((acc, rule) => {
-					if (rule && rule.id) {
-						acc[rule.id] = rule
-					}
-					return acc
-				}, {})
-			} catch (e) {
-				console.error('Error fetching rules:', e)
-				this.rules = {}
-			}
-		},
+		// fetchRules() method removed
 		getFileName(path) {
 			if (!path) return ''
 			const parts = path.split('/')
@@ -201,12 +224,11 @@ export default {
 		},
 		getDisplayPath(path) {
 			if (!path) return ''
-			// Remove the leading /username/files/ part
-			// e.g., /manas/files/Shared/doc.txt -> Shared/doc.txt
 			return path.replace(/^\/[^/]+\/files\//, '')
 		},
 		getRuleDescription(ruleId) {
-			const rule = this.rules[ruleId]
+			// Use this.rulesMap here
+			const rule = this.rulesMap[ruleId]
 			return rule ? rule.description : t('approval', 'Workflow') + ' ' + ruleId
 		},
 		getStatusLabel(status) {
@@ -234,6 +256,8 @@ export default {
 .table-scroll-wrapper {
 	overflow-x: auto;
 	margin-bottom: 10px; /* Adjusted space for pagination controls */
+	display: block; /* Ensure it behaves as a block element */
+	max-width: 100%; /* Constrain to parent width */
 }
 
 .analytics-table {
