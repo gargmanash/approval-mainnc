@@ -135,6 +135,11 @@ export default {
 			margin-inline-start: 28px;
 			margin-top: 4px;
 
+			> span:first-child {
+				white-space: nowrap;
+				flex-shrink: 0;
+			}
+
 			.nc-button {
 				margin-inline-end: 8px;
 			}
