@@ -134,8 +134,14 @@ export default {
 			align-items: center;
 			margin-inline-start: 28px;
 			margin-top: 4px;
+			flex-wrap: nowrap;
 
 			> span:first-child {
+				white-space: nowrap;
+				flex-shrink: 0;
+			}
+
+			.item-rule {
 				white-space: nowrap;
 				flex-shrink: 0;
 			}
