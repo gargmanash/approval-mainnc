@@ -106,10 +106,13 @@ export default {
 
 			.nc-icon-svg {
 				margin-inline-end: 8px;
+				flex-shrink: 0;
 			}
 
 			.item-name {
 				font-weight: normal;
+				white-space: nowrap;
+				flex-shrink: 0;
 			}
 
 			.folder-kpis,
@@ -117,6 +120,8 @@ export default {
 				margin-inline-start: 8px;
 				font-size: 0.9em;
 				color: var(--color-text-maxcontrast-secondary);
+				white-space: nowrap;
+				flex-shrink: 0;
 			}
 		}
 
