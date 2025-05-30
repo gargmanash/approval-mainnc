@@ -144,6 +144,7 @@ export default {
 			.item-rule {
 				white-space: nowrap;
 				flex-shrink: 0;
+				font-weight: bold;
 			}
 
 			.nc-button {
