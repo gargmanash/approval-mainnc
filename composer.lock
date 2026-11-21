@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "318fbb5536699e165051925868e663c4",
+    "content-hash": "553a16234f69f019871aefac39bc422f",
     "packages": [],
     "packages-dev": [
         {
@@ -986,20 +986,20 @@
         },
         {
             "name": "psalm/phar",
-            "version": "5.25.0",
+            "version": "7.10.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/psalm/phar.git",
-                "reference": "d42708449bd2d99ec6509924332fd94263974b20"
+                "reference": "fd6f78659419d280c9cc27691a496047d78ec5be"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/psalm/phar/zipball/d42708449bd2d99ec6509924332fd94263974b20",
-                "reference": "d42708449bd2d99ec6509924332fd94263974b20",
+                "url": "https://api.github.com/repos/psalm/phar/zipball/fd6f78659419d280c9cc27691a496047d78ec5be",
+                "reference": "fd6f78659419d280c9cc27691a496047d78ec5be",
                 "shasum": ""
             },
             "require": {
-                "php": "^7.1 || ^8.0"
+                "php": "^8.2"
             },
             "conflict": {
                 "vimeo/psalm": "*"
@@ -1015,9 +1015,9 @@
             "description": "Composer-based Psalm Phar",
             "support": {
                 "issues": "https://github.com/psalm/phar/issues",
-                "source": "https://github.com/psalm/phar/tree/5.25.0"
+                "source": "https://github.com/psalm/phar/tree/7.10.0"
             },
-            "time": "2024-06-19T20:02:02+00:00"
+            "time": "2026-11-18T00:49:00+00:00"
         },
         {
             "name": "psr/clock",
@@ -2382,10 +2382,10 @@
     },
     "prefer-stable": false,
     "prefer-lowest": false,
-    "platform": [],
-    "platform-dev": [],
+    "platform": {},
+    "platform-dev": {},
     "platform-overrides": {
         "php": "8.2"
     },
-    "plugin-api-version": "2.6.0"
+    "plugin-api-version": "2.9.0"
 }
